@@ -264,7 +264,7 @@ def analyze_step_data(csv_filename):
     
     # Commanded vs measured velocity
     ax1.plot(mission_time, velocity_cmds, 'r-', linewidth=2, label='Commanded vz [m/s]')
-    ax1.plot(mission_time, velocity_measured, 'b-', linewidth=1, alpha=0.8, label='Measured vz [m/s]')
+    ax1.plot(mission_time, velocity_measured*-100, 'b-', linewidth=1, alpha=0.8, label='Measured vz [m/s]')
     ax1.set_ylabel('Velocity [m/s]')
     ax1.set_title('Velocity Command vs Measured Response')
     ax1.legend()
@@ -272,7 +272,7 @@ def analyze_step_data(csv_filename):
     
     # Height response
     ax2.plot(mission_time, height_sonar, 'g-', linewidth=1.5, label='Sonar Height [m]', alpha=0.8)
-    ax2.plot(mission_time, height_baro, 'm-', linewidth=1.5, label='Barometer Height [m]', alpha=0.8)
+    ax2.plot(mission_time, height_baro-height_baro[0], 'm-', linewidth=1.5, label='Barometer Height [m]', alpha=0.8)
     ax2.set_xlabel('Mission Time [s]')
     ax2.set_ylabel('Height [m]')
     ax2.set_title('Height Response from Both Sensors')
@@ -306,7 +306,44 @@ def analyze_step_data(csv_filename):
     # Hint: Skip steps with < 10 samples
     # Hint: Use .iloc[:10] for first 10, .iloc[-10:] for last 10
     # Hint: Use .median() instead of .mean() to reduce noise effects
-    
+
+    indices = np.unique(step_indices)
+    print(f'run indices: {indices}')
+    results = {'dz_expected': np.empty((len(indices), )),
+               'dz_baro': np.empty((len(indices), )),
+               'dz_sonar': np.empty((len(indices), )),
+               'velocity_cmd':np.empty((len(indices), )),
+               }
+
+    for index in indices:
+        print(30*"=")
+        print(f'results for index {index}')
+        step_data = df[df['step_index']==index]
+        if len(step_data) < 10:
+            print('skipping because len(step) < 10')
+            continue
+        velocity_cmd = step_data['velocity_cmd'].iloc[0]
+        results['velocity_cmd'][index] = velocity_cmd
+        print(f'Velocity commanded: {velocity_cmd} m/s')
+        duration = SAMPLE_DT * len(step_data)
+        print(f'movement time: {duration} s')
+        results['dz_expected'][index] = velocity_cmd*duration
+        # print(f'Expected dz: {results["dz_expected"]} m')
+        baro_start = step_data['height_baro'].iloc[:10]
+        baro_stop = step_data['height_baro'].iloc[-10:]
+        results['dz_baro'][index] = baro_stop.median()-baro_start.median()
+        # print(f'Baro dz: {results["dz_baro"]} m')
+        sonar_start = step_data['height_sonar'].iloc[:10]
+        sonar_stop = step_data['height_sonar'].iloc[-10:]
+        results['dz_sonar'][index] = sonar_stop.median() - sonar_start.median()
+        # print(f'Sonar dz: {results["dz_sonar"]} m')
+        print(50*'-')
+        print(f'dz expected (m) \t dz_baro (m)\t dz_sonar (m)\n'
+              f'{round(results["dz_expected"][index],2)} \t\t\t\t {round(results["dz_baro"][index],2)}\t'
+              f'\t\t\t{round(results["dz_sonar"][index],2)}')
+        print(50 * '-')
+
+
     print("TODO: Implement step-by-step analysis")
     
     # ==================== TODO: CALIBRATION REGRESSION ====================
@@ -330,26 +367,66 @@ def analyze_step_data(csv_filename):
     # Hint: Higher R² = better linear relationship
     
     print("TODO: Implement calibration regression")
+    results = df.from_dict(results)
+    results_nz = results[np.abs(results['velocity_cmd']) > 0]
+
+    [baro_scale,baro_bias] = np.polyfit(results_nz['dz_expected'],results_nz['dz_baro'],1)
+    [sonar_scale, sonar_bias] = np.polyfit(results_nz['dz_expected'], results_nz['dz_sonar'], 1)
+
+    print('sensor\t sse \t ss \t R^2 \t RMSE')
+    # baro prediction
+    baro_prediction = baro_scale*results_nz['dz_expected'] + baro_bias
+    sse_baro = np.sum( (baro_prediction-results_nz['dz_baro'])**2)
+    ss_baro = np.sum( (baro_prediction-results_nz['dz_baro'].mean())**2)
+    R2_baro = 1-sse_baro/ss_baro
+    N = len(baro_prediction)
+    RMSE_baro = np.sqrt(1/N * sse_baro)
+    print(f'baro : \t {round(sse_baro,2)} \t {round(ss_baro,2)}\t {round(R2_baro,3)} \t {round(RMSE_baro,3)}')
+
+    # sonar prediction
+    sonar_prediction = sonar_scale * results_nz['dz_expected'] + sonar_bias
+    sse_sonar = np.sum((sonar_prediction - results_nz['dz_sonar']) ** 2)
+    ss_sonar = np.sum((sonar_prediction - results_nz['dz_sonar'].mean()) ** 2)
+    R2_sonar = 1-sse_sonar/ss_sonar
+    N = len(baro_prediction)
+    RMSE_sonar = np.sqrt(1 / N * sse_sonar)
+    print(f'sonar:\t {round(sse_sonar,3)} \t {round(ss_sonar,2)}\t {round(R2_sonar,3)} \t {round(RMSE_sonar,3)}')
+
+
     
     # Dummy values for now - replace with your calculations
-    sonar_scale, sonar_bias, sonar_r2 = 1.0, 0.0, 0.0
-    baro_scale, baro_bias, baro_r2 = 1.0, 0.0, 0.0
-    sonar_rmse, baro_rmse = 0.0, 0.0
+    sonar_scale, sonar_bias, sonar_r2 = sonar_scale, sonar_bias, R2_sonar
+    baro_scale, baro_bias, baro_r2 = baro_scale, baro_bias, R2_baro
+    sonar_rmse, baro_rmse = RMSE_sonar, RMSE_baro
     
     # ==================== TODO: SAVE RESULTS ====================
     
     # TODO: Save calibration table to CSV
     # Use pandas: pd.DataFrame(calibration_table).to_csv(...)
-    
+    results_nz[['dz_expected','dz_baro','dz_sonar']].to_csv('calibration_table.csv')
     # TODO: Determine recommended sensor
     # Compare R² and RMSE - higher R², lower RMSE is better
+    print('based on R^2 and RMSE above barometer appears to be the more accurate sensor but only ever so slightly. \n '
+          'In this case it is basically a dead heat')
     
-    recommended_sensor = "SONAR"  # TODO: Determine from analysis
+    recommended_sensor = "Barometer"  # TODO: Determine from analysis
     
     # TODO: Save results to JSON file
     # Include: recommended_sensor, sonar_calibration{scale, bias, r2, rmse},
     #          barometer_calibration{scale, bias, r2, rmse}
-    
+
+    json_output = {'recommended_sensor': recommended_sensor,
+                   'sonar_calibration':{'scale':sonar_scale,
+                                        'bias':sonar_bias,
+                                        'r2': sonar_r2,
+                                        'rmse':RMSE_sonar},
+                   'baro_calibration':{'scale':baro_scale,
+                                        'bias':baro_bias,
+                                        'r2': baro_r2,
+                                        'rmse':RMSE_baro},}
+
+    with open('Lab1-Phase2/results.json','w+') as f:
+        json.dump(json_output,f,indent=2)
     print(f"\n{'='*60}")
     print("PHASE 2 CALIBRATION RESULTS")
     print(f"{'='*60}")
@@ -363,7 +440,8 @@ def main():
     print("=" * 40)
     
     # Run the step calibration test
-    csv_filename = run_step_calibration()
+    #csv_filename = run_step_calibration()
+    csv_filename = f'Lab1-Phase2/step_calibration_data.csv'
     
     if csv_filename:
         # Analyze the collected data
