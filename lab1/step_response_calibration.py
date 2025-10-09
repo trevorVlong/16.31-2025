@@ -278,6 +278,7 @@ def analyze_step_data(csv_filename):
     ax2.set_title('Height Response from Both Sensors')
     ax2.legend()
     ax2.grid(True, alpha=0.3)
+    ax2.set_ylim(0,np.max(height_sonar)*1.5)
     
     plt.tight_layout()
     plt.savefig(os.path.join(OUTPUT_DIR, 'step_response.png'), dpi=200, bbox_inches='tight')
