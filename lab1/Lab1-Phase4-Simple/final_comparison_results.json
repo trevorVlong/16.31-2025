@@ -1,0 +1,19 @@
+{
+  "test_type": "pid_vs_heuristic_comparison",
+  "trajectory": "0.5m \u2192 1.5m",
+  "pid_gains": {
+    "kp": 1.0,
+    "ki": 0.05,
+    "kd": 0.01
+  },
+  "performance_metrics": {
+    "settling_time": 23.90007495880127,
+    "steady_state_error": 0.05729508196721317,
+    "rise_time": 3.760795831680298,
+    "max_overshoot_percent": 13.793103448275874,
+    "control_chattering": 328.4324255655278,
+    "rms_error": 0.18011894218358418,
+    "final_error": 0.07000000000000006,
+    "mean_absolute_error": 0.1056166666666667
+  }
+}

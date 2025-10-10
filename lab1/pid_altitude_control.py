@@ -791,8 +791,10 @@ def main():
     
     try:
         # Step 1: Systematic PID tuning
-        best_kp, best_ki, best_kd = systematic_pid_tuning()
-        
+        # best_kp, best_ki, best_kd = systematic_pid_tuning()
+        best_kp = 1.
+        best_kd = 0.01
+        best_ki = 0.05
         if best_kp is None:
             print("Tuning failed - aborting")
             return

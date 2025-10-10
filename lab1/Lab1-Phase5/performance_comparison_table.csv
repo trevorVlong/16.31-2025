@@ -1,0 +1,7 @@
+Metric,If-Else Controller,PID Controller,Winner
+Settling time [s],inf,23.90,PID
+Steady-state error [m],0.240,0.057,PID
+Rise time [s],0.85,3.76,Heuristic
+Maximum overshoot [%],53.9,13.8,PID
+Control chattering [switches/min],44.1,328.4,Heuristic
+RMS error [m],0.320,0.180,PID

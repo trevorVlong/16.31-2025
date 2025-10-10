@@ -434,13 +434,18 @@ def main():
     print(f"\n{'='*60}")
     print("SENSOR CHARACTERIZATION SUMMARY")
     print(f"{'='*60}")
-    
+
+    # TODO
     print(f"\nTODO: Examine the analysis results above and answer these questions:")
     print(f"  1. Which sensors are noisy? Compare noise levels.")
+    print(f" Nothing appears very noisy -- the accelerometer a bit")
     print(f"  2. Do you see any drift or bias? Is it significant?")
+    print(f" there is some drift in the altitutde measurement from the sonar which seems on the order of +\- 1cm")
     print(f"  3. How do barometer vs sonar compare? Which is more reliable?")
     print(f"  4. What's the sampling rate? Did we achieve 10 Hz?")
+    print(f" figure shows that we are essentially at 10Hz to the 5th decimal place")
     print(f"  5. Which sensor would you recommend for altitude control?")
+    print(f" at this point sonar because it seems less buggy to work with")
     print(f"\nWrite your observations in comments or a separate text file.")
     
     print(f"\nPhase 1 analysis complete! Plots saved to {OUTPUT_DIR}/")
