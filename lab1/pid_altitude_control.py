@@ -126,11 +126,27 @@ class PIDController:
             derivative: D term value
         """
         # TODO: Implement PID calculation here (~15-20 lines)
-        error = 0.0  # TODO
-        proportional = 0.0  # TODO
-        integral = 0.0  # TODO
-        derivative = 0.0  # TODO
-        output = 0.0  # TODO
+
+        error = setpoint-measured_value  # TODO
+        proportional = self.kp*error  # TODO
+        self.integral += error*self.dt
+        integral = self.ki*self.integral  # TODO
+        if self.first_run:
+            derivative = 0
+        else:
+            derivative = (error-self.previous_error)/self.dt  # TODO
+
+        output =  proportional + integral + derivative # TODO
+
+        if self.first_run: self.first_run=False
+
+        if output >1:
+            output = 1
+        elif output<-1:
+            output = -1
+        self.previous_error = error
+
+
         
         return output, proportional, integral, derivative
     

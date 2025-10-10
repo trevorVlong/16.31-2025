@@ -170,11 +170,11 @@ def heuristic_controller(current_altitude, target_altitude, tolerance):
         control_action: String describing the action ("CLIMB", "DESCEND", or "HOLD")
     """
     # TODO: Implement if-else control logic here (should be ~5-10 lines)
-    error = current_altitude-target_altitude  # TODO: Calculate error
-    if error > 0:
+    error = target_altitude - target_altitude  # TODO: Calculate error
+    if error < 0:
         velocity_command = VELOCITY_DOWN
         control_action = "DESCEND"
-    elif error <0:
+    elif error >0:
         velocity_command = VELOCITY_UP
         control_action = "CLIMB"
     else:
