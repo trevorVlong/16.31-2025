@@ -1,0 +1,10 @@
+{
+  "settling_time": "inf",
+  "steady_state_error": 0.23956810631229236,
+  "rise_time": 0.8487758636474609,
+  "max_overshoot_percent": 53.92156862745097,
+  "control_chattering": 44.07479035983755,
+  "rms_error": 0.3199075387253844,
+  "final_error": 0.48,
+  "mean_absolute_error": 0.2634166666666667
+}

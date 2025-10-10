@@ -99,10 +99,18 @@ def get_current_altitude(sensor_data):
     Based on Phase 2 calibration results, choose the better sensor.
     """
     # Use sonar if available and reasonable, otherwise barometer
-    if not np.isnan(sensor_data['height_sonar']) and sensor_data['height_sonar'] > 0.1:
-        return sensor_data['height_sonar']
-    elif not np.isnan(sensor_data['height_baro']):
+    # if not np.isnan(sensor_data['height_sonar']) and sensor_data['height_sonar'] > 0.1:
+    #     return sensor_data['height_sonar']
+    # elif not np.isnan(sensor_data['height_baro']):
+    #     return sensor_data['height_baro']
+    # else:
+    #     return TARGET_ALTITUDE  # Fallback estimate
+
+    # edited to use baro from part 3
+    if not np.isnan(sensor_data['height_baro']) and sensor_data['height_baro'] > 0.1:
         return sensor_data['height_baro']
+    elif not np.isnan(sensor_data['height_sonar']):
+        return sensor_data['height_sonar']
     else:
         return TARGET_ALTITUDE  # Fallback estimate
 
@@ -170,7 +178,7 @@ def heuristic_controller(current_altitude, target_altitude, tolerance):
         control_action: String describing the action ("CLIMB", "DESCEND", or "HOLD")
     """
     # TODO: Implement if-else control logic here (should be ~5-10 lines)
-    error = target_altitude - target_altitude  # TODO: Calculate error
+    error = target_altitude - current_altitude  # TODO: Calculate error
     if error < 0:
         velocity_command = VELOCITY_DOWN
         control_action = "DESCEND"
