@@ -446,11 +446,28 @@ def generate_executive_summary(comparison_df, heuristic_metrics, pid_metrics, pi
         f.write("- Has PID outperformed if-else control?\n")
         f.write("- What are the key advantages?\n")
         f.write("- Does this provide competitive advantage?\n\n")
-        
+
+        f.write("The PID control demonstrates much more desireable control characteristics than \n"
+                "the heuristic controller. Most prominantly, the PID controller has a non-infinite settling time \n ("
+                "24s PID vs inf heuristic), final error (0.07m vs 0.48m) and rms error (.18m PID vs .32 heuristic) "
+                "are \n also much improved. In general these represent a controller that is asymptotically stable vs \n"
+                "vs the heuristic controller which oscillates forever until the battery runs out without actually \n"
+                "establishing an altitude.\n"
+                "\n"
+                "The bang-bang controller did have some bright spots. The rise time is much faster than the PID\n"
+                "(.85s vs 3.8s) and the chattering is lower (44 heuristic vs 328 PID). That said chattering \n"
+                "does not tell us the scale of the sign change and some might be very small on the PID controller.\n"
+                "Similarly, the faster rise time is not helpful if the controller does not actually converge to the \n"
+                "desired altitude. \n"
+                "\n"
+                "Ultimately, many of the deficiencies of the PID controller can be tuned depending on the desired\n"
+                "charcteristics of the system while the bang bang controller does not really have any knobts to turn\n"
+                "to make it better.")
         # TODO: Add your recommendation
         f.write("RECOMMENDATION:\n")
         f.write("-" * 14 + "\n")
         f.write("TODO: Should AeroTech proceed with PID-based proposal?\n")
+        f.write("PID controller")
     
     print(f"Executive summary saved to {summary_file}")
     return summary_file

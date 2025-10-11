@@ -272,7 +272,7 @@ def analyze_step_data(csv_filename):
     
     # Height response
     ax2.plot(mission_time, height_sonar, 'g-', linewidth=1.5, label='Sonar Height [m]', alpha=0.8)
-    ax2.plot(mission_time, height_baro-height_baro[0], 'm-', linewidth=1.5, label='Barometer Height [m]', alpha=0.8)
+    ax2.plot(mission_time, height_baro, 'm-', linewidth=1.5, label='Barometer Height [m]', alpha=0.8)
     ax2.set_xlabel('Mission Time [s]')
     ax2.set_ylabel('Height [m]')
     ax2.set_title('Height Response from Both Sensors')

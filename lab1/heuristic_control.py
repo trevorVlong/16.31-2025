@@ -570,10 +570,19 @@ def analyze_heuristic_performance(csv_filename):
     print(f"\n--- TODO: ANALYZE THE CONTROLLER BEHAVIOR ---")
     print(f"Examine the plots and metrics above, then answer:")
     print(f"  1. Does the system reach and maintain the target altitude?")
+    # system reaches altitude but never really holds it except for happenstance
     print(f"  2. Is the behavior smooth or jerky?")
+    # very jerky
     print(f"  3. Is it stable or oscillatory?")
+    # very oscillatory
     print(f"  4. What causes any oscillations you observe?")
+    # oscillations are caused by the constant overshoot from the bang bang controller. response does not scale with
+    # error and so any small error creates a large response from the controller causing overshoot and a new error.
     print(f"  5. What are the fundamental limitations of this approach?")
+    # while this does 'control' the system it does not differentiate between different types of error or error scale.
+    # For instance, if the altitude error is 0 but the velocity is nonzero, the system is blind to this error until
+    # the altitude error registers in one of the sensors. Additionally, the lack of scaling means that small errors
+    # lead to disproportionately large responses and vice-versa
     print(f"\nWrite your observations in a text file or comments.")
     
     # Save metrics to file
@@ -607,7 +616,8 @@ def main():
     print(f"Test duration: {TEST_DURATION}s")
     
     # Run the heuristic control test
-    csv_filename = run_heuristic_control()
+    # csv_filename = run_heuristic_control()
+    csv_filename = 'Lab1-Phase4-Simple/pid_vs_heuristic_comparison.csv'
     
     if csv_filename:
         # Analyze the collected data

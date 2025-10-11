@@ -1,6 +1,6 @@
 Executive Summary: PID vs Heuristic Control Analysis
 ============================================================
-Date: 2025-10-10 14:16:00
+Date: 2025-10-10 23:08:44
 
 EXPERIMENTAL DESIGN:
 --------------------
@@ -25,6 +25,22 @@ Based on the experimental results:
 - What are the key advantages?
 - Does this provide competitive advantage?
 
-RECOMMENDATION:
+The PID control demonstrates much more desireable control characteristics than 
+the heuristic controller. Most prominantly, the PID controller has a non-infinite settling time 
+ (24s PID vs inf heuristic), final error (0.07m vs 0.48m) and rms error (.18m PID vs .32 heuristic) are 
+ also much improved. In general these represent a controller that is asymptotically stable vs 
+vs the heuristic controller which oscillates forever until the battery runs out without actually 
+establishing an altitude.
+
+The bang-bang controller did have some bright spots. The rise time is much faster than the PID
+(.85s vs 3.8s) and the chattering is lower (44 heuristic vs 328 PID). That said chattering 
+does not tell us the scale of the sign change and some might be very small on the PID controller.
+Similarly, the faster rise time is not helpful if the controller does not actually converge to the 
+desired altitude. 
+
+Ultimately, many of the deficiencies of the PID controller can be tuned depending on the desired
+charcteristics of the system while the bang bang controller does not really have any knobts to turn
+to make it better.RECOMMENDATION:
 --------------
 TODO: Should AeroTech proceed with PID-based proposal?
+PID controller

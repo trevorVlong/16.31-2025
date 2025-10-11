@@ -74,15 +74,14 @@ def calculate_noise_level(signal, detrend_window=None):
             window_size = signal_length // 10
         else:
             window_size = detrend_window
-        padded_signal = np.zeros((100,))
-        padded_signal = np.append(padded_signal,signal)
-        padded_signal = np.append(padded_signal,np.zeros((100,)))
+        padding = np.zeros((window_size,))
+        padded_signal = np.hstack((padding,signal,padding))
         v = 1/signal_length * np.ones((window_size,))
-        trend = np.convolve(v,signal,'same')
+        trend = np.convolve(v,padded_signal,'same')
 
-        detrended_signal = signal-trend
+        detrended_signal = padded_signal-trend
 
-        return np.std(detrended_signal)
+        return np.std(detrended_signal[window_size:-1-window_size])
 
 
 def calculate_drift_rate(timestamps, signal):
@@ -198,8 +197,41 @@ def compare_height_sensors(height_sonar, height_baro, target_altitudes):
         sonar_rmse: RMS error vs targets for sonar
         baro_rmse: RMS error vs targets for barometer
     """
-    # TODO: Implement sensor comparison
-    return 0.0, 1.0, 0.0, 0.0, 0.0, 0.0
+
+    # remove nans
+    to_remove = []
+    num_sonar_invalid=0
+    num_baro_invalid=0
+    len_sonar = len(height_sonar)
+    len_baro = len(height_baro)
+    for idx, val in enumerate(height_baro):
+        if np.isinf(val):
+            to_remove.append(idx)
+            num_baro_invalid +=1
+
+    for idx, val in enumerate(height_sonar):
+        if np.isinf(val):
+            to_remove.append(idx)
+            num_sonar_invalid+=1
+
+    height_sonar = np.delete(height_sonar, to_remove)
+    height_baro = np.delete(height_baro, to_remove)
+    target_altitudes = np.delete(target_altitudes,to_remove)
+
+    # correlation
+    corr = np.corrcoef(height_sonar,height_baro*100)
+    # bias
+    bias = np.mean(height_baro*100-height_sonar)
+
+    # dropout
+    sonar_dropout = num_sonar_invalid/len_sonar
+    baro_dropout = num_baro_invalid/len_baro
+
+    #RMSE
+    sonar_rmse = np.sqrt(np.mean((height_sonar-target_altitudes)**2))
+    baro_rmse = np.sqrt(np.mean((height_baro*100 - target_altitudes) ** 2))
+
+    return bias, corr[0,1], sonar_dropout, baro_dropout, sonar_rmse, baro_rmse
 
 # ============================================================================
 # PROVIDED: Data loading and plotting code
@@ -226,7 +258,7 @@ def main():
         
         # 3-axis sensor data
         acceleration = np.column_stack([df['ax'].values, df['ay'].values, df['az'].values])
-        velocity = np.column_stack([df['vx'].values, df['vy'].values, df['vz'].values])
+        velocity = np.column_stack([df['vx'].values, df['vy'].values, df['vz'].values])*100
         attitude = np.column_stack([df['roll'].values, df['pitch'].values, df['yaw'].values])
         
         # Height sensors
@@ -323,7 +355,8 @@ def main():
     # ==================== PLOT 4: HEIGHT COMPARISON ====================
     fig, ax = plt.subplots(figsize=(14, 6))
     ax.plot(timestamps, height_sonar, 'b-', label='Sonar Height [m]', linewidth=2, alpha=0.8)
-    ax.plot(timestamps, height_baro, 'r-', label='Barometer Height [m]', linewidth=2, alpha=0.8)
+    ax.plot(timestamps, (height_baro-height_baro[0])*100 + 0.5, 'r-', label='Barometer Height [m]', linewidth=2,
+            alpha=0.8)
     ax.plot(timestamps, target_altitudes, 'k--', label='Target Altitude [m]', linewidth=2, alpha=0.7)
     
     # Add setpoint region backgrounds and labels
@@ -413,7 +446,7 @@ def main():
     # Drift analysis
     print(f"\n--- DRIFT ANALYSIS ---")
     sonar_drift, sonar_r2 = calculate_drift_rate(timestamps, height_sonar)
-    baro_drift, baro_r2 = calculate_drift_rate(timestamps, height_baro)
+    baro_drift, baro_r2 = calculate_drift_rate(timestamps, height_baro*100)
     
     print(f"Sonar height drift:          {sonar_drift:.4f} m/s (R² = {sonar_r2:.3f})")
     print(f"Barometer height drift:      {baro_drift:.4f} m/s (R² = {baro_r2:.3f})")
@@ -438,10 +471,15 @@ def main():
     # TODO
     print(f"\nTODO: Examine the analysis results above and answer these questions:")
     print(f"  1. Which sensors are noisy? Compare noise levels.")
-    print(f" Nothing appears very noisy -- the accelerometer a bit")
+    print(f" The accelerometer and sonar seem quite noisy. Accelerometer might be actual read (hard to tell the \n"
+          f"difference). Sonar noise of ~0.5 m is pretty significant relative to dz steps (~ 0.5 m)")
     print(f"  2. Do you see any drift or bias? Is it significant?")
-    print(f" there is some drift in the altitutde measurement from the sonar which seems on the order of +\- 1cm")
+    print(f" There is a dirft of ~ 4cm/s for both sensors, which seems pretty significant. Additionally,\n "
+          f"the baro bias is pretty extreme (must have been weird high pressure zone the day that this lab section "
+          f"was run)")
     print(f"  3. How do barometer vs sonar compare? Which is more reliable?")
+    print(f"Baro has pretty significant bias but has much less noise. As long as it is calibrated I would use this \n "
+          f"vs. the sonar with the only concern being that baro does not measure height relative to surroundings.")
     print(f"  4. What's the sampling rate? Did we achieve 10 Hz?")
     print(f" figure shows that we are essentially at 10Hz to the 5th decimal place")
     print(f"  5. Which sensor would you recommend for altitude control?")
