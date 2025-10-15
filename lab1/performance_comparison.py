@@ -16,9 +16,9 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 
 # Configuration
-OUTPUT_DIR = "Lab1-Phase5"
-PHASE3_DIR = "Lab1-Phase3"
-PHASE4_DIR = "Lab1-Phase4-Simple"
+OUTPUT_DIR = "Lab1-TrevorLong-AndrewBromberger/Lab1-Phase5"
+PHASE3_DIR = "Lab1-TrevorLong-AndrewBromberger/Lab1-Phase3"
+PHASE4_DIR = "Lab1-TrevorLong-AndrewBromberger/Lab1-Phase4-Simple"
 
 def ensure_dir(path):
     """Create directory if it doesn't exist"""

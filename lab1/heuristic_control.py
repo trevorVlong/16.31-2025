@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 from djitellopy import Tello
 
 # Configuration
-OUTPUT_DIR = "Lab1-Phase3"
+OUTPUT_DIR = "Lab1-TrevorLong-AndrewBromberger/Lab1-Phase3"
 SAMPLE_DT = 0.05  # 20 Hz sampling rate
 
 # Control parameters - Use these values, do not modify
@@ -617,7 +617,7 @@ def main():
     
     # Run the heuristic control test
     # csv_filename = run_heuristic_control()
-    csv_filename = 'Lab1-Phase4-Simple/pid_vs_heuristic_comparison.csv'
+    csv_filename = 'Lab1-TrevorLong-AndrewBromberger/Lab1-Phase4-Simple/pid_vs_heuristic_comparison.csv'
     
     if csv_filename:
         # Analyze the collected data

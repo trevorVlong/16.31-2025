@@ -24,7 +24,7 @@ import numpy as np
 from djitellopy import Tello
 
 # Configuration
-OUTPUT_DIR = "Lab1-Phase1"
+OUTPUT_DIR = "Lab1-TrevorLong-AndrewBromberger/Lab1-Phase1"
 SAMPLE_DT = 0.1  # 10 Hz sampling rate
 
 # Mission parameters

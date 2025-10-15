@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 from djitellopy import Tello
 
 # Configuration
-OUTPUT_DIR = "Lab1-Phase2"
+OUTPUT_DIR = "Lab1-TrevorLong-AndrewBromberger/Lab1-Phase2"
 SAMPLE_DT = 0.05  # 20 Hz sampling rate
 
 # Step velocity sequence: (velocity_cmd [m/s], duration [s])
@@ -426,7 +426,7 @@ def analyze_step_data(csv_filename):
                                         'r2': baro_r2,
                                         'rmse':RMSE_baro},}
 
-    with open('Lab1-Phase2/results.json','w+') as f:
+    with open('Lab1-TrevorLong-AndrewBromberger/Lab1-Phase2/results.json', 'w+') as f:
         json.dump(json_output,f,indent=2)
     print(f"\n{'='*60}")
     print("PHASE 2 CALIBRATION RESULTS")
@@ -442,7 +442,7 @@ def main():
     
     # Run the step calibration test
     #csv_filename = run_step_calibration()
-    csv_filename = f'Lab1-Phase2/step_calibration_data.csv'
+    csv_filename = f'Lab1-TrevorLong-AndrewBromberger/Lab1-Phase2/step_calibration_data.csv'
     
     if csv_filename:
         # Analyze the collected data
