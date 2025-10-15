@@ -1,6 +1,6 @@
 Executive Summary: PID vs Heuristic Control Analysis
 ============================================================
-Date: 2025-10-10 23:08:44
+Date: 2025-10-15 11:47:55
 
 EXPERIMENTAL DESIGN:
 --------------------
@@ -39,8 +39,8 @@ Similarly, the faster rise time is not helpful if the controller does not actual
 desired altitude. 
 
 Ultimately, many of the deficiencies of the PID controller can be tuned depending on the desired
-charcteristics of the system while the bang bang controller does not really have any knobts to turn
-to make it better.RECOMMENDATION:
+charcteristics of the system while the bang bang controller does not really have any knobs to turn
+to make it better.RECOMMENDATION: PID
 --------------
 TODO: Should AeroTech proceed with PID-based proposal?
 PID controller

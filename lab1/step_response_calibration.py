@@ -407,9 +407,10 @@ def analyze_step_data(csv_filename):
     # TODO: Determine recommended sensor
     # Compare R² and RMSE - higher R², lower RMSE is better
     print('based on R^2 and RMSE above barometer appears to be the more accurate sensor but only ever so slightly. \n '
-          'In this case it is basically a dead heat')
+          'Even still I would recommend using the sonar because the drift in the barometer seems to be unreliable \n'
+          'based on the calibration in Lab1-Phase1 height-comparison.png')
     
-    recommended_sensor = "Barometer"  # TODO: Determine from analysis
+    recommended_sensor = "Sonar"  # TODO: Determine from analysis
     
     # TODO: Save results to JSON file
     # Include: recommended_sensor, sonar_calibration{scale, bias, r2, rmse},

@@ -461,10 +461,10 @@ def generate_executive_summary(comparison_df, heuristic_metrics, pid_metrics, pi
                 "desired altitude. \n"
                 "\n"
                 "Ultimately, many of the deficiencies of the PID controller can be tuned depending on the desired\n"
-                "charcteristics of the system while the bang bang controller does not really have any knobts to turn\n"
+                "charcteristics of the system while the bang bang controller does not really have any knobs to turn\n"
                 "to make it better.")
         # TODO: Add your recommendation
-        f.write("RECOMMENDATION:\n")
+        f.write("RECOMMENDATION: PID\n")
         f.write("-" * 14 + "\n")
         f.write("TODO: Should AeroTech proceed with PID-based proposal?\n")
         f.write("PID controller")

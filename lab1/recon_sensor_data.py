@@ -66,7 +66,7 @@ def get_sensor_readings(tello):
         'vx': state['vgx']*cm_to_m, 'vy': state['vgy']*cm_to_m, 'vz': state['vgz']*cm_to_m,
         'roll': state['roll'], 'pitch': state['pitch'], 'yaw': state['yaw'],
         'height_sonar': state['tof']*cm_to_m,
-        'height_baro': state['baro']*cm_to_m,
+        'height_baro': state['baro'],
         'battery': state['bat']
     }
 
@@ -191,7 +191,7 @@ def main():
                         last_collection_time = time.time()
                         data = get_sensor_readings(tello)
                         data['mission_time'] = last_collection_time
-                        data['target_altitude'] = alt * 1/100
+                        data['target_altitude'] = alt * 1/100 #cm to m
                         writer.writerow(data)
         
         # TODO: Implement main collection loop here
