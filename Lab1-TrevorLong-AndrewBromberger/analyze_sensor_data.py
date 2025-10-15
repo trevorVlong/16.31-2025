@@ -22,8 +22,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Configuration
-INPUT_DIR = "Lab1-TrevorLong-AndrewBromberger/Lab1-Phase1"
-OUTPUT_DIR = "Lab1-TrevorLong-AndrewBromberger/Lab1-Phase1"
+INPUT_DIR = "Lab1-Phase1"
+OUTPUT_DIR = "Lab1-Phase1"
 DATA_FILE = os.path.join(INPUT_DIR, "sensor_data.csv")
 
 

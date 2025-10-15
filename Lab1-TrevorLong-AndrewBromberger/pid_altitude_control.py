@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 from djitellopy import Tello
 
 # Configuration
-OUTPUT_DIR = "Lab1-TrevorLong-AndrewBromberger/Lab1-Phase4-Simple"
+OUTPUT_DIR = "Lab1-Phase4-Simple"
 SAMPLE_DT = 0.05  # 20 Hz sampling rate
 
 # Test parameters
