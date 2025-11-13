@@ -27,6 +27,8 @@ OUTPUT_DIR = "Lab2-Phase1"
 SAMPLE_RATE = 10  # Hz
 TEST_DISTANCES = [1.0, 1.5, 2.0, 2.5, 3.0]  # meters
 SAMPLES_PER_DISTANCE = 300  # 30 seconds at 10 Hz
+SAMPLE_DT = 0.05  # 20 Hz sampling rate
+SAMPLE_TIME = 30
 
 # AprilTag setup
 TAG_SIZE = 0.162  # meters
@@ -77,9 +79,9 @@ class CoordinateTransformer:
         """
         # TODO: Implement coordinate transformation
         # Hint: Consider the relationship between tag distance and drone forward position
-        x_drone = 0.0  # REPLACE THIS
-        y_drone = 0.0  # REPLACE THIS
-        z_drone = 0.0  # REPLACE THIS
+        x_drone = -z_tag  # REPLACE THIS
+        y_drone = x_tag  # REPLACE THIS
+        z_drone = y_tag  # REPLACE THIS
         
         return x_drone, y_drone, z_drone
     
@@ -103,10 +105,24 @@ class CoordinateTransformer:
         # Hint: velocity = gain * error, then apply safety limits
         max_velocity = 0.3
         
-        vx = 0.0  # REPLACE THIS
-        vy = 0.0  # REPLACE THIS
-        vz = 0.0  # REPLACE THIS
-        
+        vx = -kp_x*x_error
+        if vx > max_velocity:
+            vx = max_velocity
+        elif vx<-max_velocity:
+            vx = -max_velocity
+
+        vy = -kp_y*y_error
+        if vy > max_velocity:
+            vy = max_velocity
+        elif vy<-max_velocity:
+            vy = -max_velocity
+
+        vz = -kp_z*z_error
+        if vz > max_velocity:
+            vz = max_velocity
+        elif vz<-max_velocity:
+            vz = -max_velocity
+
         return vx, vy, vz
 
 def get_apriltag_detection(frame, detector):
@@ -212,6 +228,7 @@ def characterize_apriltag_detection():
     time.sleep(2)
     
     detector = Detector(families='tag36h11')
+    controller = PIDController(kp=1,ki=0.05,kd=.01)
     
     try:
         battery = tello.get_battery()
@@ -227,7 +244,8 @@ def characterize_apriltag_detection():
         time.sleep(2)
         
         print("Adjusting altitude...")
-        tello.move_down(30)
+        move_to_altitude(tello,1.5,controller,SAMPLE_TIME)
+
         time.sleep(2)
         
         print("\nStarting AprilTag characterization")
@@ -339,20 +357,32 @@ def analyze_characterization_data(csv_filename):
         # TODO: Calculate detection success rate
         # Hint: Count detected samples / total samples
         total_samples = len(distance_data)
-        detected_samples = 0  # REPLACE THIS
-        detection_rate = 0.0  # REPLACE THIS
+        detected_samples = sum(distance_data['detected'].values)  # REPLACE THIS
+        detection_rate = detected_samples/total_samples  # REPLACE THIS
         
         # TODO: Calculate position noise (standard deviation)
         # Hint: Use np.nanstd() to handle NaN values from undetected samples
-        x_noise = 0.0  # REPLACE THIS
-        y_noise = 0.0  # REPLACE THIS
-        z_noise = 0.0  # REPLACE THIS
+        x_noise = np.nanstd(distance_data['x_tag'])  # REPLACE THIS
+        y_noise = np.nanstd(distance_data['y_tag'])  # REPLACE THIS
+        z_noise = np.nanstd(distance_data['z_tag'])  # REPLACE THIS
         
         # TODO: Calculate maximum consecutive dropout duration
         # Hint: Loop through detected array, count consecutive zeros
         detected_array = distance_data['detected'].values
-        max_dropout = 0  # REPLACE THIS (in samples)
-        max_dropout_seconds = 0.0  # REPLACE THIS (convert to seconds)
+        zero_len = 0
+        max_dropout = 0
+        for isamp in np.arange(0,total_samples):
+            if detected_array[isamp] == 0:
+                zero_len +=1
+                if zero_len>max_dropout:
+                    max_dropout=zero_len
+            else:
+                if zero_len>max_dropout:
+                    max_dropout=zero_len
+                zero_len = 0
+
+
+        max_dropout_seconds = max_dropout*1/SAMPLE_RATE  # REPLACE THIS (convert to seconds)
         
         results[test_distance] = {
             'detection_rate': detection_rate,
@@ -419,11 +449,183 @@ def create_characterization_plots(results):
     
     print(f"Plots saved to {OUTPUT_DIR}/apriltag_characterization.png")
 
+
+def move_to_altitude(tello, target_altitude, pid_controller, duration):
+    """
+    Move drone to target altitude using PID control for specified duration.
+    """
+    print(f"    Moving to {target_altitude:.1f}m for {duration:.0f}s...")
+
+    data = {
+        'mission_time': [],
+        'target_altitude': [],
+        'current_altitude': [],
+        'error': [],
+        'velocity_cmd': [],
+        'proportional': [],
+        'integral': [],
+        'derivative': []
+    }
+
+    start_time = time.time()
+    next_sample_time = start_time
+
+    while time.time() - start_time < duration:
+        current_time = time.time()
+
+        if current_time >= next_sample_time:
+            mission_time = current_time - start_time
+
+            # Get sensor readings
+            sensor_data = get_sensor_data(tello)
+            current_altitude = get_current_altitude(sensor_data)
+
+            # PID control
+            velocity_cmd, p_term, i_term, d_term = pid_controller.update(target_altitude, current_altitude)
+
+            # Send control command
+            rc_cmd = velocity_to_rc(velocity_cmd)
+            tello.send_rc_control(0, 0, rc_cmd, 0)
+
+            # Log data
+            data['mission_time'].append(mission_time)
+            data['target_altitude'].append(target_altitude)
+            data['current_altitude'].append(current_altitude)
+            data['error'].append(target_altitude - current_altitude)
+            data['velocity_cmd'].append(velocity_cmd)
+            data['proportional'].append(p_term)
+            data['integral'].append(i_term)
+            data['derivative'].append(d_term)
+
+            next_sample_time += SAMPLE_DT
+
+        time.sleep(0.01)
+
+    # Stop motion
+    tello.send_rc_control(0, 0, 0, 0)
+    final_altitude = get_current_altitude(get_sensor_data(tello))
+    print(f"    Reached {final_altitude:.2f}m")
+
+    return data
+
+def get_current_altitude(sensor_data):
+    """Get current altitude estimate, preferring sonar if valid"""
+    if not np.isnan(sensor_data['height_sonar']) and sensor_data['height_sonar'] > 0.1:
+        return sensor_data['height_sonar']
+    elif not np.isnan(sensor_data['height_baro']):
+        return sensor_data['height_baro']
+    else:
+        return 1.0  # Fallback estimate
+
+def velocity_to_rc(velocity_mps):
+    """Convert velocity in m/s to RC throttle command (-100 to +100)"""
+    velocity_mps = max(-1.0, min(1.0, velocity_mps))
+    rc_cmd = int(velocity_mps * 100)
+    return max(-100, min(100, rc_cmd))
+
+
+def get_sensor_data(tello):
+    """Get sensor data from Tello"""
+    try:
+        height_sonar = tello.get_distance_tof() / 100.0  # cm -> m
+        height_baro = tello.get_barometer() / 100.0  # cm -> m
+        velocity_z = tello.get_speed_z() / 100.0  # cm/s -> m/s
+        battery = tello.get_battery()  # already in %
+
+        return {
+            'height_sonar': height_sonar,
+            'height_baro': height_baro,
+            'velocity_z': velocity_z,
+            'battery': battery
+        }
+    except Exception as e:
+        print(f"Error reading sensors: {e}")
+        return {
+            'height_sonar': 0.0,
+            'height_baro': 0.0,
+            'velocity_z': 0.0,
+            'battery': 0.0
+        }
+
+
+class PIDController:
+    """Simple PID Controller for altitude control"""
+
+    def __init__(self, kp=0.0, ki=0.0, kd=0.0, dt=0.05):
+        self.kp = kp
+        self.ki = ki
+        self.kd = kd
+        self.dt = dt
+
+        # Internal state
+        self.integral = 0.0
+        self.previous_error = 0.0
+        self.first_run = True
+
+    def update(self, setpoint, measured_value):
+        """
+        Update PID controller with new measurement.
+
+        TODO: Implement PID calculation
+        1. Calculate error = setpoint - measured_value
+        2. Calculate proportional term: P = kp * error
+        3. Update and calculate integral term:
+           - self.integral += error * self.dt  (accumulate error over time)
+           - I = ki * self.integral
+        4. Calculate derivative term:
+           - If first run: D = 0 (no previous error to compare)
+           - Otherwise: D = kd * (error - self.previous_error) / self.dt
+           - Set self.first_run = False after first calculation
+        5. Calculate total output = P + I + D
+        6. Clamp output to [-1.0, 1.0] for safety
+        7. Store current error as self.previous_error for next iteration
+        8. Return: (output, P, I, D) for logging/plotting
+
+        Args:
+            setpoint: Desired altitude [m]
+            measured_value: Current altitude [m]
+
+        Returns:
+            output: Control output (velocity command) [m/s]
+            proportional: P term value
+            integral: I term value
+            derivative: D term value
+        """
+        # TODO: Implement PID calculation here (~15-20 lines)
+
+        error = setpoint - measured_value  # TODO
+        proportional = self.kp * error  # TODO
+        self.integral += error * self.dt
+        integral = self.ki * self.integral  # TODO
+        if self.first_run:
+            derivative = 0
+        else:
+            derivative = (error - self.previous_error) / self.dt  # TODO
+
+        output = proportional + integral + derivative  # TODO
+
+        if self.first_run: self.first_run = False
+
+        if output > 1:
+            output = 1
+        elif output < -1:
+            output = -1
+        self.previous_error = error
+
+        return output, proportional, integral, derivative
+
+    def reset(self):
+        """Reset PID internal state"""
+        self.integral = 0.0
+        self.previous_error = 0.0
+        self.first_run = True
+
 def main():
     print("Lab 2 - Phase 1: AprilTag Sensor Characterization")
     print("="*60)
     
-    csv_filename = characterize_apriltag_detection()
+    # csv_filename = characterize_apriltag_detection()
+    csv_filename = 'Lab2-Phase1/apriltag_characterization.csv'
     
     if csv_filename:
         analyze_characterization_data(csv_filename)

@@ -17,6 +17,8 @@ import os
 import time
 import csv
 import json
+from copy import deepcopy
+
 import numpy as np
 import matplotlib.pyplot as plt
 from djitellopy import Tello
@@ -93,6 +95,7 @@ class PIDController:
         self.previous_error = 0.0
         self.first_run = True
 
+
 class MultiAxisPIDController:
     """
     Multi-axis PID controller using three independent single-axis PIDs.
@@ -100,7 +103,7 @@ class MultiAxisPIDController:
     TODO: Implement this class to control x, y, and z axes independently.
     """
     
-    def __init__(self, kp_x=0.5, ki_x=0.01, kd_x=0.05,
+    def __init__(self, kp_x=0.5, ki_x=0.01, kd_x=0.0,
                        kp_y=0.5, ki_y=0.01, kd_y=0.05,
                        kp_z=0.5, ki_z=0.01, kd_z=0.05,
                        dt=0.05):
@@ -117,9 +120,9 @@ class MultiAxisPIDController:
         """
         # TODO: Create three PID controller instances
         # Hint: Use the PIDController class from Lab 1
-        self.pid_x = None  # REPLACE THIS
-        self.pid_y = None  # REPLACE THIS
-        self.pid_z = None  # REPLACE THIS
+        self.pid_x = PIDController(kp=kp_x,ki=ki_x,kd=kd_x)  # REPLACE THIS
+        self.pid_y = PIDController(kp=kp_y,ki=ki_y,kd=kd_y)  # REPLACE THIS
+        self.pid_z = PIDController(kp=kp_z,ki=ki_z,kd=kd_z)  # REPLACE THIS
         self.dt = dt
     
     def update(self, x_ref, y_ref, z_ref, x_meas, y_meas, z_meas):
@@ -137,9 +140,12 @@ class MultiAxisPIDController:
         """
         # TODO: Update each axis controller
         # Hint: Call self.pid_x.update(x_ref, x_meas) and similar for y, z
-        vx = 0.0  # REPLACE THIS
-        vy = 0.0  # REPLACE THIS
-        vz = 0.0  # REPLACE THIS
+        xcmd, a, b, c = self.pid_x.update(x_ref,x_meas)
+        ycmd, a, b, c = self.pid_x.update(y_ref, y_meas)
+        zcmd, a, b, c = self.pid_x.update(z_ref, z_meas)
+        vx = xcmd
+        vy = ycmd
+        vz = zcmd
         
         # Apply velocity limits for safety
         max_vel = 0.3
@@ -152,7 +158,9 @@ class MultiAxisPIDController:
     def reset(self):
         """Reset all controller states"""
         # TODO: Reset each PID controller
-        pass  # REPLACE THIS
+        self.pid_x.reset()
+        self.pid_y.reset()
+        self.pid_z.reset()
 
 def get_apriltag_pose(frame, detector):
     """
@@ -234,7 +242,7 @@ def test_step_response(tello, detector, controller, test_name):
     
     # Test positions
     x_initial, y_initial, z_initial = 0.0, 0.0, 1.2
-    x_target, y_target, z_target = 0.15, 0.15, 1.4
+    x_target, y_target, z_target = 0.15, 0.15, 1.5
     
     print(f"Initial: [{x_initial:.2f}, {y_initial:.2f}, {z_initial:.2f}]")
     print(f"Target:  [{x_target:.2f}, {y_target:.2f}, {z_target:.2f}]")
@@ -321,11 +329,12 @@ def position_to_target(tello, detector, x_target, y_target, z_target, timeout=15
                     break
             else:
                 settled_count = 0
-            
+
             vx = np.clip(0.3 * x_error, -0.2, 0.2)
             vy = np.clip(0.3 * y_error, -0.2, 0.2)
             vz = np.clip(0.3 * z_error, -0.2, 0.2)
-            
+            print(f'cmd: ex {x_error} ey {y_error} ez {z_error}')
+            print(f'cmd: vx {vx} vy {vy} vz {vz}')
             rc_lr, rc_fb, rc_ud, rc_yaw = tag_to_drone_velocity(vx, vy, vz)
             tello.send_rc_control(rc_lr, rc_fb, rc_ud, rc_yaw)
         
@@ -365,17 +374,28 @@ def calculate_multi_axis_metrics(data):
         
         # TODO: Calculate settling time
         # Hint: Find first index where error stays within band for remainder of test
-        settling_time = 0.0  # REPLACE THIS
+        db = error < band
+        exit_samp = 0
+        for isamp in np.arange(len(times)-1,0,-1):
+            tf = db[isamp]
+            if not tf:
+                exit_samp=isamp
+                break
+        settling_time = exit_samp*SAMPLE_DT  # REPLACE THIS
         settling_times.append(settling_time)
         
         # TODO: Calculate steady-state error
         # Hint: Mean of absolute error after settling
-        ss_error = 0.0  # REPLACE THIS
+        ss_error = np.nanmean(error[exit_samp:-1])  # REPLACE THIS
         
         # TODO: Calculate overshoot
         # Hint: Maximum deviation beyond target, as percentage of step size
         initial = meas[0]
-        overshoot_pct = 0.0  # REPLACE THIS
+        step = np.abs(target-initial)
+        temp_error = deepcopy(error)
+        if temp_error[0] > 0:
+            temp_error = -temp_error
+        overshoot_pct = np.nanmax(temp_error)/step  # REPLACE THIS
         
         metrics[f'{axis}_settling_time'] = settling_time
         metrics[f'{axis}_steady_state_error'] = ss_error
@@ -383,7 +403,7 @@ def calculate_multi_axis_metrics(data):
     
     # TODO: Calculate multi-axis coordination metrics
     # Multi-axis settling time is the maximum of all axes
-    metrics['multi_axis_settling'] = 0.0  # REPLACE THIS
+    metrics['multi_axis_settling'] = np.max(settling_times)  # REPLACE THIS
     
     # Coordination spread is difference between slowest and fastest axis
     metrics['coordination_spread'] = 0.0  # REPLACE THIS
@@ -464,9 +484,9 @@ def main():
         print("\nTesting Multi-Axis PID Controller")
         
         controller = MultiAxisPIDController(
-            kp_x=0.5, ki_x=0.01, kd_x=0.05,
-            kp_y=0.5, ki_y=0.01, kd_y=0.05,
-            kp_z=0.5, ki_z=0.01, kd_z=0.05
+            kp_x= 0.0, ki_x=0, kd_x=0,
+            kp_y= 1.0, ki_y=0, kd_y=0,
+            kp_z= 0.0, ki_z=0.0, kd_z=0
         )
         
         data, metrics = test_step_response(tello, detector, controller, "test_initial")
@@ -495,9 +515,9 @@ def main():
         
         results = {
             'test_initial': {
-                'gains': {'kp_x': 0.5, 'ki_x': 0.01, 'kd_x': 0.05,
-                         'kp_y': 0.5, 'ki_y': 0.01, 'kd_y': 0.05,
-                         'kp_z': 0.5, 'ki_z': 0.01, 'kd_z': 0.05},
+                'gains': {'kp_x': 0.3, 'ki_x': 0, 'kd_x': 0,
+                         'kp_y': 0, 'ki_y': 0.0, 'kd_y': 0.01,
+                         'kp_z': 1, 'ki_z': 0.05, 'kd_z': 0.01},
                 'metrics': {k: float(v) for k, v in metrics.items()}
             }
         }
