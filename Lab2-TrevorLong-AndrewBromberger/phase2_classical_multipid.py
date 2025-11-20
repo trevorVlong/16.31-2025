@@ -25,8 +25,9 @@ from djitellopy import Tello
 import cv2
 from pupil_apriltags import Detector
 
+a = time.time()
 # Configuration
-OUTPUT_DIR = "Lab2-Phase2"
+OUTPUT_DIR = "Lab2-Phase2" + str(a)
 SAMPLE_DT = 0.05  # 20 Hz
 TAG_SIZE = 0.162
 CAMERA_PARAMS = [921.170702, 919.018377, 459.904354, 351.238301]
@@ -42,28 +43,28 @@ def ensure_dir(path):
 class PIDController:
     """
     Single-axis PID controller from Lab 1.
-    
+
     This is the same PID implementation from Lab 1 Phase 4.
     """
-    
+
     def __init__(self, kp=0.0, ki=0.0, kd=0.0, dt=0.05):
         self.kp = kp
         self.ki = ki
         self.kd = kd
         self.dt = dt
-        
+
         self.integral = 0.0
         self.previous_error = 0.0
         self.first_run = True
-    
+
     def update(self, setpoint, measured_value):
         """
         Calculate PID control output.
-        
+
         Args:
             setpoint: Desired value
             measured_value: Current measured value
-        
+
         Returns:
             output: Control output
             p_term: Proportional term (for debugging)
@@ -71,24 +72,24 @@ class PIDController:
             d_term: Derivative term (for debugging)
         """
         error = setpoint - measured_value
-        
+
         p_term = self.kp * error
-        
+
         self.integral += error * self.dt
         i_term = self.ki * self.integral
-        
+
         if self.first_run:
             d_term = 0.0
             self.first_run = False
         else:
             d_term = self.kd * (error - self.previous_error) / self.dt
-        
+
         self.previous_error = error
-        
+
         output = p_term + i_term + d_term
-        
+
         return output, p_term, i_term, d_term
-    
+
     def reset(self):
         """Reset controller state"""
         self.integral = 0.0
@@ -99,19 +100,19 @@ class PIDController:
 class MultiAxisPIDController:
     """
     Multi-axis PID controller using three independent single-axis PIDs.
-    
+
     TODO: Implement this class to control x, y, and z axes independently.
     """
-    
+
     def __init__(self, kp_x=0.5, ki_x=0.01, kd_x=0.0,
                        kp_y=0.5, ki_y=0.01, kd_y=0.05,
                        kp_z=0.5, ki_z=0.01, kd_z=0.05,
                        dt=0.05):
         """
         Initialize three independent PID controllers.
-        
+
         TODO: Create three PIDController instances (one for each axis).
-        
+
         Args:
             kp_x, ki_x, kd_x: X-axis PID gains
             kp_y, ki_y, kd_y: Y-axis PID gains
@@ -124,17 +125,17 @@ class MultiAxisPIDController:
         self.pid_y = PIDController(kp=kp_y,ki=ki_y,kd=kd_y)  # REPLACE THIS
         self.pid_z = PIDController(kp=kp_z,ki=ki_z,kd=kd_z)  # REPLACE THIS
         self.dt = dt
-    
+
     def update(self, x_ref, y_ref, z_ref, x_meas, y_meas, z_meas):
         """
         Calculate control velocities for all three axes.
-        
+
         TODO: Call each PID controller and return velocity commands.
-        
+
         Args:
             x_ref, y_ref, z_ref: Reference positions [m]
             x_meas, y_meas, z_meas: Measured positions [m]
-        
+
         Returns:
             vx, vy, vz: Velocity commands [m/s]
         """
@@ -146,15 +147,15 @@ class MultiAxisPIDController:
         vx = xcmd
         vy = ycmd
         vz = zcmd
-        
+
         # Apply velocity limits for safety
         max_vel = 0.3
         vx = np.clip(vx, -max_vel, max_vel)
         vy = np.clip(vy, -max_vel, max_vel)
         vz = np.clip(vz, -max_vel, max_vel)
-        
+
         return vx, vy, vz
-    
+
     def reset(self):
         """Reset all controller states"""
         # TODO: Reset each PID controller
@@ -165,23 +166,23 @@ class MultiAxisPIDController:
 def get_apriltag_pose(frame, detector):
     """
     Detect AprilTag and return pose in tag coordinate frame.
-    
+
     Returns:
         dict with 'detected' (bool) and 'x', 'y', 'z' (float or nan)
     """
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    
+
     detections = detector.detect(
         gray,
         estimate_tag_pose=True,
         camera_params=CAMERA_PARAMS,
         tag_size=TAG_SIZE
     )
-    
+
     if len(detections) > 0:
         detection = detections[0]
         pose = detection.pose_t.flatten()
-        
+
         return {
             'detected': True,
             'x': pose[0],
@@ -199,12 +200,12 @@ def get_apriltag_pose(frame, detector):
 def tag_to_drone_velocity(vx_tag, vy_tag, vz_tag):
     """
     Transform velocity commands from tag frame to drone RC commands.
-    
+
     Tag frame velocities:
     - vx_tag: lateral velocity (+ = right)
     - vy_tag: vertical velocity (+ = up)
     - vz_tag: distance velocity (+ = away from tag)
-    
+
     Drone RC commands:
     - left_right_velocity: -100 to 100 (+ = right)
     - forward_backward_velocity: -100 to 100 (+ = forward)
@@ -215,71 +216,71 @@ def tag_to_drone_velocity(vx_tag, vy_tag, vz_tag):
     rc_forward_backward = int(-vz_tag * 100)
     rc_up_down = int(vy_tag * 100)
     rc_yaw = 0
-    
+
     rc_left_right = int(np.clip(rc_left_right, -100, 100))
     rc_forward_backward = int(np.clip(rc_forward_backward, -100, 100))
     rc_up_down = int(np.clip(rc_up_down, -100, 100))
-    
+
     return rc_left_right, rc_forward_backward, rc_up_down, rc_yaw
 
 def test_step_response(tello, detector, controller, test_name):
     """
     Test multi-axis step response.
-    
+
     Args:
         tello: Tello drone object
         detector: AprilTag detector
         controller: MultiAxisPIDController instance
         test_name: Name for saving results
-    
+
     Returns:
         data: Dictionary of test data
         metrics: Dictionary of performance metrics
     """
     print(f"\nRunning test: {test_name}")
-    
+
     ensure_dir(OUTPUT_DIR)
-    
+
     # Test positions
-    x_initial, y_initial, z_initial = 0.0, 0.0, 1.2
-    x_target, y_target, z_target = 0.15, 0.15, 1.5
-    
+    x_initial, y_initial, z_initial = 0.0, 0.0, 1.5
+    x_target, y_target, z_target = 0.3, 0.3, 2.0
+
     print(f"Initial: [{x_initial:.2f}, {y_initial:.2f}, {z_initial:.2f}]")
     print(f"Target:  [{x_target:.2f}, {y_target:.2f}, {z_target:.2f}]")
-    
+
     print("Positioning to initial location...")
     position_to_target(tello, detector, x_initial, y_initial, z_initial, timeout=15.0)
     time.sleep(2)
-    
+
     controller.reset()
-    
+
     print("Running step response...")
-    
+
     test_duration = 15.0
     start_time = time.time()
     next_sample = start_time
-    
+
     data = {
         'time': [],
         'x_ref': [], 'y_ref': [], 'z_ref': [],
         'x_meas': [], 'y_meas': [], 'z_meas': [],
         'vx_cmd': [], 'vy_cmd': [], 'vz_cmd': []
     }
-    
+
     while time.time() - start_time < test_duration:
         if time.time() >= next_sample:
             frame = tello.get_frame_read().frame
             pose = get_apriltag_pose(frame, detector)
-            
+
             if pose['detected']:
                 vx, vy, vz = controller.update(
                     x_target, y_target, z_target,
                     pose['x'], pose['y'], pose['z']
                 )
-                
-                rc_lr, rc_fb, rc_ud, rc_yaw = tag_to_drone_velocity(vx, vy, vz)
+
+                rc_lr, rc_fb, rc_ud, rc_yaw = tag_to_drone_velocity(-vx, vy, vz)
                 tello.send_rc_control(rc_lr, rc_fb, rc_ud, rc_yaw)
-                
+
                 t = time.time() - start_time
                 data['time'].append(t)
                 data['x_ref'].append(x_target)
@@ -291,38 +292,38 @@ def test_step_response(tello, detector, controller, test_name):
                 data['vx_cmd'].append(vx)
                 data['vy_cmd'].append(vy)
                 data['vz_cmd'].append(vz)
-                
+
                 if len(data['time']) % 20 == 0:
                     print(f"  t={t:.1f}s: pos=[{pose['x']:.2f}, {pose['y']:.2f}, {pose['z']:.2f}]")
-            
+
             next_sample += SAMPLE_DT
-        
+
         time.sleep(0.01)
-    
+
     tello.send_rc_control(0, 0, 0, 0)
-    
+
     csv_filename = os.path.join(OUTPUT_DIR, f"{test_name}_data.csv")
     save_test_data(data, csv_filename)
-    
+
     metrics = calculate_multi_axis_metrics(data)
     plot_multi_axis_response(data, metrics, test_name)
-    
+
     return data, metrics
 
 def position_to_target(tello, detector, x_target, y_target, z_target, timeout=15.0):
     """Simple positioning using proportional control"""
     start_time = time.time()
     settled_count = 0
-    
+
     while time.time() - start_time < timeout:
         frame = tello.get_frame_read().frame
         pose = get_apriltag_pose(frame, detector)
-        
+
         if pose['detected']:
             x_error = x_target - pose['x']
             y_error = y_target - pose['y']
             z_error = z_target - pose['z']
-            
+
             if abs(x_error) < 0.1 and abs(y_error) < 0.1 and abs(z_error) < 0.1:
                 settled_count += 1
                 if settled_count > 20:
@@ -335,43 +336,43 @@ def position_to_target(tello, detector, x_target, y_target, z_target, timeout=15
             vz = np.clip(0.3 * z_error, -0.2, 0.2)
             print(f'cmd: ex {x_error} ey {y_error} ez {z_error}')
             print(f'cmd: vx {vx} vy {vy} vz {vz}')
-            rc_lr, rc_fb, rc_ud, rc_yaw = tag_to_drone_velocity(vx, vy, vz)
+            rc_lr, rc_fb, rc_ud, rc_yaw = tag_to_drone_velocity(-vx, vy, vz)
             tello.send_rc_control(rc_lr, rc_fb, rc_ud, rc_yaw)
-        
+
         time.sleep(0.05)
-    
+
     tello.send_rc_control(0, 0, 0, 0)
 
 def calculate_multi_axis_metrics(data):
     """
     Calculate performance metrics for multi-axis step response.
-    
+
     TODO: Implement metric calculations for:
     - Settling time (time to reach and stay within 5% of target)
     - Overshoot (maximum overshoot as percentage of step size)
     - Steady-state error (mean error after settling)
     - Multi-axis settling time (maximum of all axes)
     - Coordination spread (difference between fastest and slowest axis)
-    
+
     Args:
         data: Dictionary containing time series data
-    
+
     Returns:
         metrics: Dictionary of calculated metrics
     """
     times = np.array(data['time'])
-    
+
     metrics = {}
     settling_times = []
-    
+
     for axis in ['x', 'y', 'z']:
         ref = np.array(data[f'{axis}_ref'])
         meas = np.array(data[f'{axis}_meas'])
         error = ref - meas
-        
+
         target = ref[0]
         band = 0.05 * abs(target) if abs(target) > 0.1 else 0.05
-        
+
         # TODO: Calculate settling time
         # Hint: Find first index where error stays within band for remainder of test
         db = error < band
@@ -383,11 +384,11 @@ def calculate_multi_axis_metrics(data):
                 break
         settling_time = exit_samp*SAMPLE_DT  # REPLACE THIS
         settling_times.append(settling_time)
-        
+
         # TODO: Calculate steady-state error
         # Hint: Mean of absolute error after settling
         ss_error = np.nanmean(error[exit_samp:-1])  # REPLACE THIS
-        
+
         # TODO: Calculate overshoot
         # Hint: Maximum deviation beyond target, as percentage of step size
         initial = meas[0]
@@ -396,32 +397,32 @@ def calculate_multi_axis_metrics(data):
         if temp_error[0] > 0:
             temp_error = -temp_error
         overshoot_pct = np.nanmax(temp_error)/step  # REPLACE THIS
-        
+
         metrics[f'{axis}_settling_time'] = settling_time
         metrics[f'{axis}_steady_state_error'] = ss_error
         metrics[f'{axis}_overshoot'] = overshoot_pct
-    
+
     # TODO: Calculate multi-axis coordination metrics
     # Multi-axis settling time is the maximum of all axes
     metrics['multi_axis_settling'] = np.max(settling_times)  # REPLACE THIS
-    
+
     # Coordination spread is difference between slowest and fastest axis
     metrics['coordination_spread'] = 0.0  # REPLACE THIS
-    
+
     return metrics
 
 def plot_multi_axis_response(data, metrics, test_name):
     """Generate plots for multi-axis response"""
-    
+
     fig, axes = plt.subplots(3, 2, figsize=(14, 12))
-    
+
     times = np.array(data['time'])
-    
+
     for i, axis in enumerate(['x', 'y', 'z']):
         ref = np.array(data[f'{axis}_ref'])
         meas = np.array(data[f'{axis}_meas'])
         vel = np.array(data[f'v{axis}_cmd'])
-        
+
         ax = axes[i, 0]
         ax.plot(times, meas, 'b-', linewidth=2, label=f'{axis} measured')
         ax.plot(times, ref, 'r--', linewidth=2, label=f'{axis} reference')
@@ -429,25 +430,25 @@ def plot_multi_axis_response(data, metrics, test_name):
         ax.set_title(f'{axis.upper()}-axis Tracking')
         ax.legend()
         ax.grid(True, alpha=0.3)
-        
+
         ax = axes[i, 1]
         ax.plot(times, vel, 'g-', linewidth=1.5)
         ax.axhline(0, color='k', linestyle='-', alpha=0.5)
         ax.set_ylabel(f'v_{axis} [m/s]')
         ax.set_title(f'{axis.upper()}-axis Control')
         ax.grid(True, alpha=0.3)
-    
+
     axes[-1, 0].set_xlabel('Time [s]')
     axes[-1, 1].set_xlabel('Time [s]')
-    
+
     metrics_text = f"Multi-axis settling: {metrics['multi_axis_settling']:.2f}s\n"
     metrics_text += f"Coordination spread: {metrics['coordination_spread']:.2f}s\n"
     fig.text(0.5, 0.02, metrics_text, ha='center', fontsize=10,
              bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
-    
+
     plt.tight_layout()
     plt.subplots_adjust(bottom=0.08)
-    plt.savefig(os.path.join(OUTPUT_DIR, f'{test_name}_response.png'), 
+    plt.savefig(os.path.join(OUTPUT_DIR, f'{test_name}_response.png'),
                 dpi=200, bbox_inches='tight')
     plt.close()
 
@@ -461,36 +462,38 @@ def main():
     """Main function"""
     print("Lab 2 - Phase 2: Multi-Axis PID Control")
     print("="*60)
-    
+
     tello = Tello()
     print("\nConnecting to Tello...")
     tello.connect()
     tello.streamon()
-    
+
     detector = Detector(families='tag36h11')
-    
+
     try:
         battery = tello.get_battery()
         print(f"Battery: {battery}%")
-        
+
         if battery < 30:
             print("Battery too low!")
             return
-        
+
         print("Taking off...")
         tello.takeoff()
-        time.sleep(3)
-        
+        time.sleep(2)
+        tello.move_up(50)
+        time.sleep(1)
+
         print("\nTesting Multi-Axis PID Controller")
-        
+
         controller = MultiAxisPIDController(
-            kp_x= 0.0, ki_x=0, kd_x=0,
-            kp_y= 1.0, ki_y=0, kd_y=0,
-            kp_z= 0.0, ki_z=0.0, kd_z=0
+            kp_x= 0.55, ki_x=0.011, kd_x=0.035,
+            kp_y= 0.8, ki_y=0.02, kd_y=0.02,
+            kp_z= 0.85, ki_z=0.05, kd_z=0.01
         )
-        
+
         data, metrics = test_step_response(tello, detector, controller, "test_initial")
-        
+
         print("\nTest Results:")
         print(f"  X-axis: settling={metrics['x_settling_time']:.2f}s, "
               f"overshoot={metrics['x_overshoot']:.1f}%, "
@@ -503,37 +506,37 @@ def main():
               f"ss_error={metrics['z_steady_state_error']:.3f}m")
         print(f"  Multi-axis settling: {metrics['multi_axis_settling']:.2f}s")
         print(f"  Coordination spread: {metrics['coordination_spread']:.2f}s")
-        
+
         print("\nNavy Requirements Check:")
         settling_ok = metrics['multi_axis_settling'] <= SETTLING_TIME_REQ
         overshoot_ok = all(metrics[f'{ax}_overshoot'] < OVERSHOOT_REQ for ax in ['x','y','z'])
         ss_error_ok = all(metrics[f'{ax}_steady_state_error'] < STEADY_STATE_REQ for ax in ['x','y','z'])
-        
+
         print(f"  Settling time <= {SETTLING_TIME_REQ}s: {'PASS' if settling_ok else 'FAIL'}")
         print(f"  Overshoot < {OVERSHOOT_REQ}%: {'PASS' if overshoot_ok else 'FAIL'}")
         print(f"  SS error < {STEADY_STATE_REQ}m: {'PASS' if ss_error_ok else 'FAIL'}")
-        
+
         results = {
             'test_initial': {
-                'gains': {'kp_x': 0.3, 'ki_x': 0, 'kd_x': 0,
-                         'kp_y': 0, 'ki_y': 0.0, 'kd_y': 0.01,
-                         'kp_z': 1, 'ki_z': 0.05, 'kd_z': 0.01},
+                'gains': {'kp_x': controller.pid_x.kp, 'ki_x': controller.pid_x.ki, 'kd_x': controller.pid_x.kd,
+                         'kp_y': controller.pid_y.kp, 'ki_y': controller.pid_y.ki, 'kd_y': controller.pid_y.kd,
+                         'kp_z':controller.pid_z.kp , 'ki_z': controller.pid_z.ki, 'kd_z': controller.pid_z.kd},
                 'metrics': {k: float(v) for k, v in metrics.items()}
             }
         }
-        
+
         results_file = os.path.join(OUTPUT_DIR, 'multi_pid_results.json')
         with open(results_file, 'w') as f:
             json.dump(results, f, indent=2)
-        
+
         print(f"\nResults saved to {results_file}")
-        
+
         print("\nLanding...")
         tello.land()
         time.sleep(2)
-        
+
         print(f"\nPhase 2 complete! Files saved in {OUTPUT_DIR}/")
-        
+
     except Exception as e:
         print(f"Error: {e}")
         try:

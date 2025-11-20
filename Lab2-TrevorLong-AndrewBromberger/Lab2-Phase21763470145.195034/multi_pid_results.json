@@ -1,0 +1,28 @@
+{
+  "test_initial": {
+    "gains": {
+      "kp_x": 0.5,
+      "ki_x": 0.02,
+      "kd_x": 0.035,
+      "kp_y": 0.8,
+      "ki_y": 0.02,
+      "kd_y": 0.02,
+      "kp_z": 0.85,
+      "ki_z": 0.05,
+      "kd_z": 0.01
+    },
+    "metrics": {
+      "x_settling_time": 12.600000000000001,
+      "x_steady_state_error": -0.09600066839459914,
+      "x_overshoot": 9.797122665503451,
+      "y_settling_time": 9.700000000000001,
+      "y_steady_state_error": -0.13586924818129262,
+      "y_overshoot": 0.7976933752707772,
+      "z_settling_time": 10.8,
+      "z_steady_state_error": -0.2612358307985499,
+      "z_overshoot": 0.6158991438784067,
+      "multi_axis_settling": 12.600000000000001,
+      "coordination_spread": 0.0
+    }
+  }
+}

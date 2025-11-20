@@ -73,13 +73,13 @@ def generate_helix_trajectory(t, center, radius, amplitude, cycle_time):
     
     # TODO: Calculate angular frequency
     # Hint: omega = 2*pi / T where T is the cycle time
-    omega = 0.0  # REPLACE THIS
+    omega = 2*np.pi/cycle_time
     
     # TODO: Generate helix trajectory
     # Hint: x stays constant, y and z oscillate with sin and cos
-    x_ref = 0.0  # REPLACE THIS
-    y_ref = 0.0  # REPLACE THIS
-    z_ref = 0.0  # REPLACE THIS
+    x_ref = x_c + radius * np.cos(omega*t)
+    y_ref = y_c + amplitude * np.sin(omega*t)
+    z_ref = z_c
     
     return x_ref, y_ref, z_ref
 
@@ -212,49 +212,44 @@ def tag_to_drone_velocity(vx_tag, vy_tag, vz_tag):
     rc_forward_backward = int(-vz_tag * 100)
     rc_up_down = int(vy_tag * 100)
     rc_yaw = 0
-    
+
     rc_left_right = int(np.clip(rc_left_right, -100, 100))
     rc_forward_backward = int(np.clip(rc_forward_backward, -100, 100))
     rc_up_down = int(np.clip(rc_up_down, -100, 100))
-    
+
     return rc_left_right, rc_forward_backward, rc_up_down, rc_yaw
 
 def position_to_target(tello, detector, x_target, y_target, z_target, timeout=15.0):
-    """Position drone to target location using simple proportional control"""
+    """Simple positioning using proportional control"""
     start_time = time.time()
     settled_count = 0
-    required_settled = 20
-    
-    print(f"  Target: x={x_target:.2f}, y={y_target:.2f}, z={z_target:.2f}")
-    
+
     while time.time() - start_time < timeout:
         frame = tello.get_frame_read().frame
         pose = get_apriltag_pose(frame, detector)
-        
+
         if pose['detected']:
             x_error = x_target - pose['x']
             y_error = y_target - pose['y']
             z_error = z_target - pose['z']
-            
+
             if abs(x_error) < 0.1 and abs(y_error) < 0.1 and abs(z_error) < 0.1:
                 settled_count += 1
-                if settled_count >= required_settled:
-                    print(f"  Positioned! Final: x={pose['x']:.2f}, y={pose['y']:.2f}, z={pose['z']:.2f}")
+                if settled_count > 20:
                     break
             else:
                 settled_count = 0
-            
+
             vx = np.clip(0.3 * x_error, -0.2, 0.2)
             vy = np.clip(0.3 * y_error, -0.2, 0.2)
             vz = np.clip(0.3 * z_error, -0.2, 0.2)
-            
-            rc_lr, rc_fb, rc_ud, rc_yaw = tag_to_drone_velocity(vx, vy, vz)
+
+            rc_lr, rc_fb, rc_ud, rc_yaw = tag_to_drone_velocity(-vx, vy, vz)
             tello.send_rc_control(rc_lr, rc_fb, rc_ud, rc_yaw)
-        
+
         time.sleep(0.05)
-    
+
     tello.send_rc_control(0, 0, 0, 0)
-    time.sleep(0.5)
 
 def track_helix_trajectory(tello, detector, controller, n_cycles, test_name):
     """
@@ -320,8 +315,11 @@ def track_helix_trajectory(tello, detector, controller, n_cycles, test_name):
                     x_ref, y_ref, z_ref,
                     pose['x'], pose['y'], pose['z']
                 )
+                print(f'{vx},{vy},{vz}')
                 
-                rc_lr, rc_fb, rc_ud, rc_yaw = tag_to_drone_velocity(vx, vy, vz)
+                rc_lr, rc_fb, rc_ud, rc_yaw = tag_to_drone_velocity(-vx, vy, vz)
+
+                print(f'{rc_lr},{rc_fb},{rc_ud}')
                 tello.send_rc_control(rc_lr, rc_fb, rc_ud, rc_yaw)
                 
                 data['time'].append(t)
@@ -407,29 +405,40 @@ def calculate_trajectory_metrics(data, n_cycles):
     
     # TODO: Calculate tracking errors
     # Hint: Euclidean distance = sqrt(x_err^2 + y_err^2 + z_err^2)
-    x_err = np.array([0.0])  # REPLACE THIS
-    y_err = np.array([0.0])  # REPLACE THIS
-    z_err = np.array([0.0])  # REPLACE THIS
-    euclidean_err = np.array([0.0])  # REPLACE THIS
+    x_err = x_meas-x_ref
+    y_err = y_meas-y_ref
+    z_err = z_meas-z_ref
+    euclidean_err = np.sqrt(x_err**2 + y_err**2 + z_err**2)
     
     # TODO: Calculate overall metrics
-    mean_error = 0.0  # REPLACE THIS
-    max_error = 0.0  # REPLACE THIS
+    mean_error = np.mean(euclidean_err)
+    max_error = np.max(euclidean_err)
     
     # TODO: Calculate per-cycle metrics
-    # Hint: Loop through each cycle, calculate mean error for that cycle
-    cycle_errors = []  # REPLACE THIS
-    
+    # Hint: Loop through each cycle, calculate mean square? error for that cycle
+    # loop through each unique cycle number, pull out errors that match the current cycle number index and sum.
+    cycle_errors = []
+    cunique = np.unique(cycles)
+    for cycl in cunique:
+        cycl_error = 0
+        for idx in range(len(times)):
+            if cycles[idx]==cycl:
+                cycl_error += euclidean_err[idx]
+
+        cycle_errors.append(cycl_error)
+
+
+
     # TODO: Calculate error growth
     # Hint: Compare last cycle error to first cycle error
-    error_growth = 0.0  # REPLACE THIS
+    error_growth = cycle_errors[-1]/cycle_errors[0]
     
     # TODO: Calculate control effort
     # Hint: RMS of velocity commands
     vx = np.array(data['vx_cmd'])
     vy = np.array(data['vy_cmd'])
     vz = np.array(data['vz_cmd'])
-    control_rms = 0.0  # REPLACE THIS
+    control_rms = np.sum(np.sqrt((vx**2 + vy**2 +vz**2)/(3*len(vx))))
     
     metrics = {
         'mean_tracking_error': mean_error,
@@ -502,10 +511,10 @@ def plot_trajectory_tracking(data, metrics, test_name):
     ax4.axis('off')
     
     summary_text = f"Performance Metrics:\n\n"
-    summary_text += f"Mean tracking error: {metrics['mean_tracking_error']*100:.2f} cm\n"
-    summary_text += f"Max deviation: {metrics['max_deviation']*100:.2f} cm\n"
+    summary_text += f"Mean tracking error: {metrics['mean_tracking_error']*100} cm\n"
+    summary_text += f"Max deviation: {metrics['max_deviation']*100} cm\n"
     summary_text += f"Error growth: {metrics['error_growth_percent']:+.1f}%\n"
-    summary_text += f"Control RMS: {metrics['control_effort_rms']:.3f} m/s\n\n"
+    summary_text += f"Control RMS: {metrics['control_effort_rms']} m/s\n\n"
     
     summary_text += "Requirements Check:\n"
     summary_text += f"Mean error < 10cm: {'PASS' if metrics['mean_tracking_error'] < 0.1 else 'FAIL'}\n"
@@ -603,29 +612,32 @@ def main():
         battery = tello.get_battery()
         print(f"Battery: {battery}%")
         
-        if battery < 40:
+        if battery < 30:
             print("WARNING: Battery too low for trajectory tracking!")
             return
         
         print("\nTaking off...")
         tello.takeoff()
         time.sleep(3)
+        tello.move_up(50)
+        time.sleep(1)
         
         # Test 1: PID Controller
         print("\n" + "="*60)
         print("TEST 1: PID CONTROLLER")
         print("="*60)
-        
+
+        #TODO
         pid_controller = MultiAxisPIDController(
-            kp_x=0.5, ki_x=0.01, kd_x=0.05,
-            kp_y=0.5, ki_y=0.01, kd_y=0.05,
-            kp_z=0.5, ki_z=0.01, kd_z=0.05
+            kp_x=0.5, ki_x=0.01, kd_x=0.035,
+            kp_y=0.8, ki_y=0.02, kd_y=0.02,
+            kp_z=0.85, ki_z=0.05, kd_z=0.01
         )
-        
+
         pid_data, pid_metrics = track_helix_trajectory(
             tello, detector, pid_controller, n_cycles=3, test_name="pid_3cycle"
         )
-        
+
         print("\nPID Results:")
         print(f"  Mean error: {pid_metrics['mean_tracking_error']*100:.2f} cm")
         print(f"  Max deviation: {pid_metrics['max_deviation']*100:.2f} cm")
@@ -637,19 +649,20 @@ def main():
         print("\n" + "="*60)
         print("TEST 2: POLE PLACEMENT CONTROLLER")
         print("="*60)
-        
-        K = np.diag([1.5, 1.5, 1.5])
+        #TODO
+        K = np.diag([0.93,1.3,0.95])
         pole_controller = PolePlacementController(K, dt=SAMPLE_DT)
         
         pole_data, pole_metrics = track_helix_trajectory(
             tello, detector, pole_controller, n_cycles=3, test_name="pole_3cycle"
         )
-        
+
         print("\nPole Placement Results:")
         print(f"  Mean error: {pole_metrics['mean_tracking_error']*100:.2f} cm")
         print(f"  Max deviation: {pole_metrics['max_deviation']*100:.2f} cm")
         print(f"  Error growth: {pole_metrics['error_growth_percent']:+.1f}%")
-        
+        print("\nLanding...")
+        tello.land()
         create_comparison_table(pid_metrics, pole_metrics)
         
         comparison = {
@@ -665,8 +678,7 @@ def main():
         
         print(f"\nComparison saved to {results_file}")
         
-        print("\nLanding...")
-        tello.land()
+
         time.sleep(2)
         
         print(f"\n{'='*60}")

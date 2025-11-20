@@ -1,0 +1,24 @@
+{
+  "pid": {
+    "mean_tracking_error": 0.2285903401170498,
+    "max_deviation": 0.35871927920561364,
+    "error_growth_percent": -10.201734981177125,
+    "control_effort_rms": 3.3034246433207617,
+    "cycle_errors": [
+      96.48623882699358,
+      91.53766546764963,
+      86.28450384581646
+    ]
+  },
+  "pole_placement": {
+    "mean_tracking_error": 0.15264643966239225,
+    "max_deviation": 0.34778233677833625,
+    "error_growth_percent": -1.1371073032248873,
+    "control_effort_rms": 3.559199142743899,
+    "cycle_errors": [
+      62.03003276450591,
+      58.42101209313508,
+      60.892925461281024
+    ]
+  }
+}
