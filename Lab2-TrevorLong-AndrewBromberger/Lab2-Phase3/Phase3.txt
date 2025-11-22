@@ -1,0 +1,36 @@
+PID Requirements Analysis:
+
+    x settling time: FAIL,
+    x steady state error: PASS,
+    x overshoot: FAIL,
+    y settling time: FAIL,
+    y steady state error: PASS,
+    y overshoot: PASS,
+    z settling time: PASS,
+    z steady state error: FAIL,
+    z overshoot: PASS,
+    axis synchronization: FAIL
+
+Time Spent Tuning: 3+ Hours
+
+    Tuning took many more hours than anticipated in order to meet any of the requiremens.
+    Once we received a fully functional Tello drone, the tuning went relatively quickly.
+    (Same as PID)
+
+    In general, the Pole-Placement method took siginificantly less time than the PID method, which makes it superior in contexts where design speed is critical.
+
+
+Difficulty achieving requirements:
+
+    As is evident from the analysis above, it was difficult to meet all of the requirements on the axes simultaneously.
+    With our first Tello drone, it was almost impossible to get even one of the requirements to pass.
+    Once we had a better drone, it became possible to meet some of the requirements but still very difficult to get simultaneous passes.
+    (Same as PID)
+
+Deisgn Rationale:
+
+    The basic deisgn rationale for the Pole-placement controller was simple.
+    We started with equal gains for each of the axes, chosen by using a 1.5x factor on the required gain for a settling time of 4 seconds (per the requirement).
+    This gain was too high for all axes, so the axis gains were independently varied until the responses smoothed (oscillations stopped and overshoot decreased).
+    For two of the axes, this resulted in a gain which mathematically results in too slow of settling, but this is a trade we had to make to acheive an appropriate response.
+    
