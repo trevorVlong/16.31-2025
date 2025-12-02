@@ -1,0 +1,11 @@
+BASELINE LANDING METRICS
+========================================
+
+Tag size used: 0.13m
+Landing error: 7.67 cm
+Touchdown velocity: 0.007 m/s
+Time to land: 1.7 s
+Final position: (1.58, -0.01) m
+
+Note: Phase 3 descent used ONLY altitude control.
+No horizontal positioning was attempted during descent.

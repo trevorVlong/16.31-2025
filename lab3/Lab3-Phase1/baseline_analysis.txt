@@ -1,0 +1,21 @@
+
+BASELINE CONTROLLER VULNERABILITY ANALYSIS
+
+The baseline controller uses a simple proportional control law:
+    v_z = K_p * (z_target - z_ToF)
+
+where z_ToF is the direct reading from the Time-of-Flight sensor.
+
+ATTACK SCENARIO:
+When an adversary injects a +0.5m bias into the ToF sensor:
+- True altitude: z_true
+- Compromised reading: z_ToF = z_true + 0.5m
+
+TODO: Complete this analysis
+- Explain what happens when the controller uses the biased reading
+- Provide mathematical example with numbers
+- Explain why this causes a crash
+
+YOUR ANALYSIS HERE:
+
+
