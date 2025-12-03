@@ -18,4 +18,15 @@ TODO: Complete this analysis
 
 YOUR ANALYSIS HERE:
 
+When the controller receives a biased reading of +D, the pure P controller reacts s.t.
+    dx/dt = Ax + B(Kx+KD)
+    dx/dt = (A+BK)x + BKD
+which means that the velocity command now has a constant shift. If near land or some other
+~impermiable~ object this would certainly cause a crash. In more open environemtns it might
+not be as much an issue depending on the scale of D, K.
+
+In the case of this example a D = +0.5m and Kpz = 0.7 results in an altitude offset of -0.35m.
+Since we are trying to land this would cause the drone controller to continue commanding a
+large downward velocity as it believes it still needs to move downward to land.
+
 

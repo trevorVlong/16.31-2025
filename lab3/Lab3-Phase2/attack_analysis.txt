@@ -11,12 +11,14 @@ Answer the following questions based on your experimental data:
 Q1: What is the maximum attack duration your system can tolerate while
     maintaining <15cm accuracy?
 
-A1: [Your answer]
+A1: up to 5s the controller appeared adequite
 
 Q2: How does estimation error scale with attack duration? Is it linear,
     quadratic, or something else? Support with data.
 
-A2: [Your answer]
+A2: Error growth in attack_comparison.png clearly shows linear behavior once
+the drift accumulation stabilizes. Slopes betwen 5s and 10s runs appear to be
+similar or the same.
 
 2. SYSTEM BEHAVIOR
 ==================
@@ -24,12 +26,13 @@ A2: [Your answer]
 Q3: Describe what happens to the KF estimate during the attack window.
     Does it diverge immediately or gradually?
 
-A3: [Your observations]
+A3: The divergence is very gradual. At first it tracks well but then once errors
+begin accumulating
 
 Q4: When the attack ends and normal measurements resume, how quickly does
     the KF recover?
 
-A4: [Your observations]
+A4: KF recovers almost immediately to recovery of signal.
 
 3. CONTROL IMPLICATIONS
 ========================
@@ -37,12 +40,21 @@ A4: [Your observations]
 Q5: During the 10s attack test, did the drone's descent behavior become
     unsafe or unstable? Explain.
 
-A5: [Your observations]
+A5: Descent behavior never appeared to be come unsafe or unstable. In
+the case of our controller, it appeared to hold altitude (not sure if
+ that was a safety in the code that I missed).  There was nothing that
+ looked like divergence, however.
 
 Q6: For a real landing mission (5-8 seconds of descent), what attack
     duration could your system safely handle?
 
-A6: [Your recommendation]
+
+A6: 5s appears to be the maximum with the current requirements and is
+    supported by attack_comparison.png. If the mission requirements were more
+    relaxed it could probably handle roughly 10s before drift started to
+    become dangerous to the hardware. Because the recovery is so fast as
+    long as the drift area is not large the only real requirement is that
+    this systme remain safe during that time.
 
 4. FILTER TUNING
 ================
@@ -61,13 +73,13 @@ A8: [Your answer]
 ==============
 
 Based on your experiments, summarize:
-- Maximum safe attack duration: [X] seconds
-- Key limiting factor: [e.g., "Velocity drift", "Position uncertainty"]
-- Recommendation for Phase 3: [Your operational guidelines]
+- Maximum safe attack duration: 5 seconds
+- Key limiting factor: Position uncertainty
+- Recommendation for Phase 3: Maximum dropout/attack time of 5-8 s given current requirements
 
 SUPPORTING DATA:
 ================
 Include key numbers from your tests:
-- 2s attack max error: [X] cm
-- 5s attack max error: [X] cm  
-- 10s attack max error: [X] cm
+- 2s attack max error: 1 cm
+- 5s attack max error: 14.4 cm
+- 10s attack max error: 35.5 cm
