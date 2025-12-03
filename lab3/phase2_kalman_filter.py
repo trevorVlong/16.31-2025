@@ -31,9 +31,14 @@ from pupil_apriltags import Detector
 sys.path.append(os.path.join(os.path.dirname(__file__), 'utils'))
 from utils.kalman_filter import AltitudeKalmanFilter, test_kalman_filter
 
-OUTPUT_DIR = "Lab3-Phase2"
-Q = np.diag([0.08**2,10*0.08**2])
-R = 0.01**2
+OUTPUT_DIR = "Lab3-Phase2-3-Dec"
+# qp = .005
+# qp = 1
+qp = .00158
+qv = 10*qp
+Q = np.diag([qp**2,qv**2])
+R = 0.0145**2
+kp = 0.55
 
 
 def ensure_dir(path):
@@ -87,7 +92,7 @@ def test_hover_validation(tello):
     print(f"\nInitial altitude: {z_tof_initial:.2f}m")
     
     # Initialize KF
-    kf = AltitudeKalmanFilter(dt=0.1,Q = Q,R=R)
+    kf = AltitudeKalmanFilter(dt=0.1,Q=Q, R=R)
     kf.initialize(z_tof_initial, 0.0)
     
     print("\nHovering for 30 seconds to characterize sensor noise...")
@@ -217,8 +222,8 @@ def test_attack_resilience(tello, attack_duration, attack_start=5.0):
     }
     
     start_time = time.time()
-    kp_z = 0.3  # Gentle descent control
-    z_target = 0.5
+    kp_z = kp  # Gentle descent control (increased because did not hit altitude target otherwise)
+    z_target = 0.5 # offset added for sensor offset issue
     
     while True:
         t = time.time() - start_time
@@ -247,9 +252,10 @@ def test_attack_resilience(tello, attack_duration, attack_start=5.0):
         z_error = z_target - z_est
         vz_cmd = kp_z * z_error
         vz_cmd = np.clip(vz_cmd, -0.3, 0.3)
-        
+
+        u = (vz_cmd-vz_est)/0.1
         # KF prediction
-        kf.predict(u=0.0)
+        kf.predict(u=+u) # set u to vz_cmd
         
         # KF update: Use REAL measurements in normal mode, ignore in attack mode
         if mode == 'normal':
@@ -754,7 +760,7 @@ def main():
     battery = tello.get_battery()
     print(f"Battery: {battery}%")
     
-    if battery < 50:
+    if battery < 20:
         print("ERROR: Battery too low (need >50% for multiple tests)")
         return
     
@@ -766,11 +772,11 @@ def main():
         
         print("\nTaking off...")
         tello.takeoff()
-        time.sleep(3)
+        time.sleep(2)
         
         # Test 1: Hover validation
         print("\n" + "="*60)
-        print("Starting Test 1: Hover Validation")
+        print("Starting Test  1: Hover Validation")
         print("="*60)
         hover_data = test_hover_validation(tello)
         

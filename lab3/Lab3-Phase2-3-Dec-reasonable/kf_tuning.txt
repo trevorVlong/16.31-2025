@@ -6,8 +6,8 @@ Based on Real Hardware Validation
 =====================================
 
 From real hover test data:
-- ToF sensor standard deviation: 1.64 cm
-- Therefore: R = sigma^2 = (0.0164)^2 = 0.000268
+- ToF sensor standard deviation: 0.52 cm
+- Therefore: R = sigma^2 = (0.0052)^2 = 0.000027
 
 Physical meaning: Expected variance in ToF measurements
 Source: Direct measurement from Phase 2 hover test
@@ -33,34 +33,34 @@ Velocity uncertainty (q_vz = 0.01 m/s = 1 cm/s):
 ===================================
 
 Hover Test Results:
-- ToF noise (std): 1.64 cm (raw sensor)
-- KF estimate (std): 1.64 cm (filtered)
+- ToF noise (std): 0.52 cm (raw sensor)
+- KF estimate (std): 0.50 cm (filtered)
 - Noise reduction: 1.0x smoother
-- Innovation RMS: 0.56 cm
+- Innovation RMS: 0.40 cm
 
 Attack Resilience Tests:
 Attack with +0.5m sensor bias, KF using prediction-only mode
 
 2s Attack:
-- Max error: 3.1 cm
-- Mean error: 1.8 cm
+- Max error: 3.4 cm
+- Mean error: 1.4 cm
 - Result: PASS (threshold: 15cm)
 
 5s Attack:
-- Max error: 24.9 cm
-- Mean error: 10.4 cm
-- Result: FAIL (threshold: 15cm)
+- Max error: 12.3 cm
+- Mean error: 3.6 cm
+- Result: PASS (threshold: 15cm)
 
 10s Attack:
-- Max error: 47.1 cm
-- Mean error: 19.4 cm
+- Max error: 49.0 cm
+- Mean error: 19.0 cm
 - Result: FAIL (threshold: 15cm)
 
 Interpretation:
 - Prediction-only mode degrades with time (drift accumulates)
-- Safe operational limit: ~2s without sensor updates
+- Safe operational limit: ~5s without sensor updates
 - Error growth approximately linear with attack duration
-- For Phase 3 landing (5-8s descent), attack tolerance is marginal
+- For Phase 3 landing (5-8s descent), attack tolerance is adequate
 
 4. TUNING GUIDELINES
 =====================
@@ -75,16 +75,13 @@ If KF needs adjustment based on flight testing:
 For prediction-only performance:
 - Drift too large -> DECREASE Q (trust model more)
 - Filter too rigid -> INCREASE Q (allow flexibility)
-qp = .008
-qv = 3*qp
-Q = np.diag([qp**2,qv**2])
-R = 0.1*0.018**2
+
 5. CONCLUSION
 ==============
 
 Filter parameters validated on real hardware:
 [+] Noise reduction: 1.0x smoother than raw measurements
-[+] Prediction-only: <15cm drift for 2s attacks
+[+] Prediction-only: <15cm drift for 5s attacks
 [+] Well-tuned: Small innovations, stable gain convergence
 
 System is ready for Phase 3 resilient landing mission.

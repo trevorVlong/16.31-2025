@@ -40,14 +40,16 @@ OUTPUT_DIR = "Lab3-Phase3"
 
 # Mission parameters
 TARGET_POSITION = (1.5, 0.0, 2.5)  # (x, y, z) in tag frame
-Q = np.diag([0.08**2,10*0.08**2])
-R = 0.01**2
+qp = .005
+qv = 10*qp
+Q = np.diag([qp**2,qv**2])
+R = 0.0145**2
 
 # ============================================================
 # TODO: Tune these control parameters for stable flight
 # ============================================================
-KP_XY = 0.5  # Horizontal control gain
-KP_Z = 0.5   # Vertical control gain
+KP_XY = 0.3  # Horizontal control gain
+KP_Z = 0.45   # Vertical control gain
 XY_TOLERANCE = 0.2  # Horizontal position tolerance [m]
 Z_TOLERANCE = 0.05   # Vertical position tolerance [m]
 # ============================================================

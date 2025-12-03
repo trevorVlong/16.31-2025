@@ -116,14 +116,13 @@ class AltitudeKalmanFilter:
         # ============================================================
         # 1. State prediction: x_{k|k-1} = A * x_{k-1|k-1} + B * u_{k-1}
         #    Update self.x_hat using self.A, self.B, and u_vec
-        self.x_hat = self.A @ self.x_hat + self.B @ u_vec
+        self.x_hat = np.dot(self.A, self.x_hat) + np.dot(self.B, u_vec)
         
         
         # 2. Covariance prediction: P_{k|k-1} = A * P_{k-1|k-1} * A^T + Q
         #    Update self.P using self.A, self.Q
         
-        self.P = self.A @ self.P @ self.A.T + self.Q
-        
+        self.P = np.dot(np.dot(self.A, self.P), self.A.T) + self.Q
         
         # ============================================================
     
@@ -149,33 +148,33 @@ class AltitudeKalmanFilter:
         # 1. Innovation: nu = y - H * x_{k|k-1}
         #    Compute innovation and store in self.innovation
         
-        self.innovation = y - self.H @ self.x_hat
+        self.innovation = y - np.dot(self.H, self.x_hat)
         
         
         # 2. Innovation covariance: S = H * P_{k|k-1} * H^T + R
         #    Compute S using self.H, self.P, self.R
         
-        S = self.H @ self.P @ self.H.T + self.R
+        S = np.dot(np.dot(self.H, self.P), self.H.T) + self.R
         
         
         # 3. Kalman gain: K = P_{k|k-1} * H^T * S^{-1}
         #    Compute and store in self.K
         #    Hint: Use np.linalg.inv() for matrix inverse
         
-        self.K = self.P @ self.H.T @ np.linalg.inv(S)
+        self.K = np.dot(np.dot(self.P, self.H.T), np.linalg.inv(S))
         
         
         # 4. State update: x_{k|k} = x_{k|k-1} + K * nu
         #    Update self.x_hat using Kalman gain and innovation
         
-        self.x_hat = self.x_hat + self.K @ self.innovation
+        self.x_hat = self.x_hat + np.dot(self.K, self.innovation)
         
         
         # 5. Covariance update: P_{k|k} = (I - K * H) * P_{k|k-1}
         #    Update self.P
         #    Hint: I = np.eye(2)
         
-        self.P = (np.eye(2)-self.K @ self.H) @ self.P
+        self.P = np.dot((np.eye(2) - np.dot(self.K, self.H)), self.P)
         
         
         # ============================================================
