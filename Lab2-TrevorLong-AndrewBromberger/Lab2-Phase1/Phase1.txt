@@ -1,0 +1,4 @@
+Identify optimal operating range.
+
+The optimal operating range for our particular Tello drone was 2.5-3.0m.
+This is evidenced by perfect AprilTag detection and low measurement error at that range.
