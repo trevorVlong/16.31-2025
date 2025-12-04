@@ -11,12 +11,12 @@ Answer the following questions based on your experimental data:
 Q1: What is the maximum attack duration your system can tolerate while
     maintaining <15cm accuracy?
 
-A1: [Your answer]
+A1: The maximum attack duration our system can tolerate while maintaining the required accuracy is approximately 5 seconds.
 
 Q2: How does estimation error scale with attack duration? Is it linear,
     quadratic, or something else? Support with data.
 
-A2: [Your answer]
+A2: The error scales quadratically with attack duration, as the longer attack cases are much more severe than we would expect for a simple linear relationship. (5s - 12.3cm, 10s - 49.0cm).
 
 2. SYSTEM BEHAVIOR
 ==================
@@ -24,12 +24,12 @@ A2: [Your answer]
 Q3: Describe what happens to the KF estimate during the attack window.
     Does it diverge immediately or gradually?
 
-A3: [Your observations]
+A3: The KF estimate diverges gradually as the attack proceeds. The rate of divergence increases with time.
 
 Q4: When the attack ends and normal measurements resume, how quickly does
     the KF recover?
 
-A4: [Your observations]
+A4: The KF recovers almost immediately after the attack ends.
 
 3. CONTROL IMPLICATIONS
 ========================
@@ -37,12 +37,12 @@ A4: [Your observations]
 Q5: During the 10s attack test, did the drone's descent behavior become
     unsafe or unstable? Explain.
 
-A5: [Your observations]
+A5: Yes, during the 10s attack test, the drone's behavior became unsafe, as the modeling was not able to track the true altitude over that period of time.
 
 Q6: For a real landing mission (5-8 seconds of descent), what attack
     duration could your system safely handle?
 
-A6: [Your recommendation]
+A6: During a real landing mission (of 5-8s), the attack duration would have to be around the same as the time to land, as this is required to give the system enough time to recover after the attack or to land while the error is still not severe enough to cause unsafe landing.
 
 4. FILTER TUNING
 ================
@@ -50,24 +50,24 @@ A6: [Your recommendation]
 Q7: If you needed to increase attack tolerance from 5s to 10s, how would
     you modify the Q matrix? Explain your reasoning.
 
-A7: [Your answer]
+A7: Decreasing Q to trust the model more should decrease our drift and increase our attack time tolerance.
 
 Q8: What is the tradeoff of decreasing Q to improve prediction-only
     performance? What might get worse?
 
-A8: [Your answer]
+A8: The consequence of decreasing Q is that the estimation will start to ignore actual measurement data in the scenarios where the system is not operating on predictions only.
 
 5. CONCLUSIONS
 ==============
 
 Based on your experiments, summarize:
-- Maximum safe attack duration: [X] seconds
-- Key limiting factor: [e.g., "Velocity drift", "Position uncertainty"]
-- Recommendation for Phase 3: [Your operational guidelines]
+- Maximum safe attack duration: 5 seconds
+- Key limiting factor: Position Uncertainty
+- Recommendation for Phase 3: Limit "attack" duration to the Maximum Sade Attack Duration
 
 SUPPORTING DATA:
 ================
 Include key numbers from your tests:
-- 2s attack max error: [X] cm
-- 5s attack max error: [X] cm  
-- 10s attack max error: [X] cm
+- 2s attack max error: 3.4 cm
+- 5s attack max error: 12.3 cm  
+- 10s attack max error: 49.0 cm
