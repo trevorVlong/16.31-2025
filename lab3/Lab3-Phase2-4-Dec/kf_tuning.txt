@@ -6,8 +6,8 @@ Based on Real Hardware Validation
 =====================================
 
 From real hover test data:
-- ToF sensor standard deviation: 1.24 cm
-- Therefore: R = sigma^2 = (0.0124)^2 = 0.000154
+- ToF sensor standard deviation: 1.71 cm
+- Therefore: R = sigma^2 = (0.0171)^2 = 0.000291
 
 Physical meaning: Expected variance in ToF measurements
 Source: Direct measurement from Phase 2 hover test
@@ -33,27 +33,27 @@ Velocity uncertainty (q_vz = 0.01 m/s = 1 cm/s):
 ===================================
 
 Hover Test Results:
-- ToF noise (std): 1.24 cm (raw sensor)
-- KF estimate (std): 1.27 cm (filtered)
+- ToF noise (std): 1.71 cm (raw sensor)
+- KF estimate (std): 1.75 cm (filtered)
 - Noise reduction: 1.0x smoother
-- Innovation RMS: 0.48 cm
+- Innovation RMS: 0.54 cm
 
 Attack Resilience Tests:
 Attack with +0.5m sensor bias, KF using prediction-only mode
 
 2s Attack:
-- Max error: 10.4 cm
-- Mean error: 6.3 cm
+- Max error: 1.8 cm
+- Mean error: 0.8 cm
 - Result: PASS (threshold: 15cm)
 
 5s Attack:
-- Max error: 20.9 cm
-- Mean error: 14.2 cm
+- Max error: 23.0 cm
+- Mean error: 8.8 cm
 - Result: FAIL (threshold: 15cm)
 
 10s Attack:
-- Max error: 22.5 cm
-- Mean error: 15.4 cm
+- Max error: 38.9 cm
+- Mean error: 13.8 cm
 - Result: FAIL (threshold: 15cm)
 
 Interpretation:

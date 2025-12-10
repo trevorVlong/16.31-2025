@@ -6,8 +6,8 @@ Based on Real Hardware Validation
 =====================================
 
 From real hover test data:
-- ToF sensor standard deviation: 0.52 cm
-- Therefore: R = sigma^2 = (0.0052)^2 = 0.000027
+- ToF sensor standard deviation: 5.09 cm
+- Therefore: R = sigma^2 = (0.0509)^2 = 0.002591
 
 Physical meaning: Expected variance in ToF measurements
 Source: Direct measurement from Phase 2 hover test
@@ -33,34 +33,34 @@ Velocity uncertainty (q_vz = 0.01 m/s = 1 cm/s):
 ===================================
 
 Hover Test Results:
-- ToF noise (std): 0.52 cm (raw sensor)
-- KF estimate (std): 0.50 cm (filtered)
-- Noise reduction: 1.0x smoother
-- Innovation RMS: 0.40 cm
+- ToF noise (std): 5.09 cm (raw sensor)
+- KF estimate (std): 5.79 cm (filtered)
+- Noise reduction: 0.9x smoother
+- Innovation RMS: 1.40 cm
 
 Attack Resilience Tests:
 Attack with +0.5m sensor bias, KF using prediction-only mode
 
 2s Attack:
-- Max error: 3.4 cm
-- Mean error: 1.4 cm
+- Max error: 13.6 cm
+- Mean error: 7.3 cm
 - Result: PASS (threshold: 15cm)
 
 5s Attack:
-- Max error: 12.3 cm
-- Mean error: 3.6 cm
-- Result: PASS (threshold: 15cm)
+- Max error: 25.2 cm
+- Mean error: 15.3 cm
+- Result: FAIL (threshold: 15cm)
 
 10s Attack:
-- Max error: 49.0 cm
-- Mean error: 19.0 cm
+- Max error: 38.3 cm
+- Mean error: 26.1 cm
 - Result: FAIL (threshold: 15cm)
 
 Interpretation:
 - Prediction-only mode degrades with time (drift accumulates)
-- Safe operational limit: ~5s without sensor updates
+- Safe operational limit: ~2s without sensor updates
 - Error growth approximately linear with attack duration
-- For Phase 3 landing (5-8s descent), attack tolerance is adequate
+- For Phase 3 landing (5-8s descent), attack tolerance is marginal
 
 4. TUNING GUIDELINES
 =====================
@@ -80,8 +80,8 @@ For prediction-only performance:
 ==============
 
 Filter parameters validated on real hardware:
-[+] Noise reduction: 1.0x smoother than raw measurements
-[+] Prediction-only: <15cm drift for 5s attacks
+[+] Noise reduction: 0.9x smoother than raw measurements
+[+] Prediction-only: <15cm drift for 2s attacks
 [+] Well-tuned: Small innovations, stable gain convergence
 
 System is ready for Phase 3 resilient landing mission.

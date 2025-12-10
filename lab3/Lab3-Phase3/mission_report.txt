@@ -8,30 +8,30 @@ MISSION PARAMETERS:
   
 TIMELINE:
   Total mission time: 9.8 s
-  AprilTag lost at: 6.1 s
-  Blind navigation duration: 3.7 s
+  AprilTag lost at: 3.5 s
+  Blind navigation duration: 6.4 s
   
 PERFORMANCE METRICS:
 
 Altitude Control (during attack):
-  Max estimation error: 18.0 cm
-  Mean estimation error: 5.0 cm
-  Status: [-] FAIL (threshold: 15cm)
+  Max estimation error: 10.6 cm
+  Mean estimation error: 4.3 cm
+  Status: [+] PASS (threshold: 15cm)
 
 Final Position Accuracy:
   Target altitude: 2.50 m
-  Actual altitude: 2.26 m
-  Final altitude error: 24.0 cm
+  Actual altitude: 2.34 m
+  Final altitude error: 16.0 cm
   
-  x: 1.92 m (target: 1.5 m, error: 0.42 m)
-  y: -0.07 m (target: 0.0 m, error: 0.07 m)
-  z: 2.26 m (target: 2.5 m, error: 24.0 cm)
+  x: 1.49 m (target: 1.5 m, error: 0.01 m)
+  y: 0.00 m (target: 0.0 m, error: 0.00 m)
+  z: 2.34 m (target: 2.5 m, error: 16.0 cm)
 
 NAVIGATION STRATEGY:
   Normal mode: AprilTag + ToF sensor + KF updates
   Attack mode: Dead reckoning (x,y) + KF prediction-only (z)
   Sensor compromise: +0.5m ToF bias during attack
 
-OVERALL RESULT: [-] MISSION DEGRADED
+OVERALL RESULT: [+] MISSION SUCCESS
 
 ============================================================

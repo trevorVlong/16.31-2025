@@ -296,7 +296,7 @@ def test_kalman_filter():
         duration=10.0, with_attack=False
     )
     
-    kf_normal = AltitudeKalmanFilter(dt=0.1,Q = np.diag([0.005,.025]),R=0.01**2)
+    kf_normal = AltitudeKalmanFilter(dt=0.1, Q = np.diag([0.005,.025]),R=0.01**2)
     kf_normal.initialize(true_z[0], 0.0)
     
     est_z_normal = []
@@ -315,7 +315,7 @@ def test_kalman_filter():
         duration=10.0, with_attack=True, attack_start=5.0
     )
     
-    kf_attack = AltitudeKalmanFilter(dt=0.1,Q = np.diag([0.005,.025]),R=0.01**2)
+    kf_attack = AltitudeKalmanFilter(dt=0.1,Q = np.diag([.001,.01]),R=0.01**2)
     kf_attack.initialize(true_z_atk[0], 0.0)
     
     est_z_attack = []

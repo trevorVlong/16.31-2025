@@ -31,15 +31,15 @@ from pupil_apriltags import Detector
 sys.path.append(os.path.join(os.path.dirname(__file__), 'utils'))
 from utils.kalman_filter import AltitudeKalmanFilter, test_kalman_filter
 
-OUTPUT_DIR = "Lab3-Phase2-3-Dec"
+OUTPUT_DIR = "Lab3-Phase2-4-Dec"
 # qp = .005
 # qp = 1
-qp = .00158
-qv = 10*qp
-Q = np.diag([qp**2,qv**2])
-R = 0.0145**2
-kp = 0.55
-
+kqp = 0.001
+kqv = 10*kqp
+Q = np.diag([kqp**2,kqv**2])
+r = (1*0.015)
+R = r**2
+kp = 0.3
 
 def ensure_dir(path):
     os.makedirs(path, exist_ok=True)
@@ -255,7 +255,7 @@ def test_attack_resilience(tello, attack_duration, attack_start=5.0):
 
         u = (vz_cmd-vz_est)/0.1
         # KF prediction
-        kf.predict(u=+u) # set u to vz_cmd
+        kf.predict(u=0) # set u to vz_cmd
         
         # KF update: Use REAL measurements in normal mode, ignore in attack mode
         if mode == 'normal':
@@ -395,6 +395,8 @@ def plot_hover_test(data):
     ax = axes[1, 1]
     ax.plot(times, data['K_z'], 'r-', linewidth=2, label='K_z (position gain)')
     ax.plot(times, np.array(data['P_zz'])*100, 'b-', linewidth=2, label='P_zz * 100')
+    # ax.plot(times, np.array(data['P_vzvz']) * 100, 'g-', linewidth=2, label='P_vv * 100')
+    print(f'shape Pzz {data["P_zz"]}')
     ax.set_xlabel('Time [s]')
     ax.set_ylabel('Gain / Covariance')
     ax.set_title('Kalman Gain Convergence')
@@ -787,8 +789,12 @@ def main():
         attack_results = run_attack_tests(tello)
         
         print("\nLanding...")
-        tello.land()
-        time.sleep(2)
+        try:
+            tello.land()
+            time.sleep(2)
+        except Exception:
+            pass
+
         
         # Generate comparative plots
         print("\n" + "="*60)
